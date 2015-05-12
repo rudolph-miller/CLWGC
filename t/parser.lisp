@@ -74,4 +74,9 @@
                (list 1 2 3)
                "with list.")))
 
+(subtest "parse"
+  (is (clwgc.parser:parse "(1 2 3)")
+      (list 1 2 3)
+      "ok."))
+
 (finalize)

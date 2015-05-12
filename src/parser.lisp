@@ -3,7 +3,8 @@
   (:use :cl
         :cl-ppcre
         :esrap)
-  (:shadow :parse))
+  (:shadow :parse)
+  (:export :parse))
 (in-package clwgc.parser)
 
 (let ((scanner (create-scanner "^([+-]?(\\d)+)\\.?$")))
