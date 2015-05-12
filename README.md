@@ -1,8 +1,6 @@
 # Clwgc
 
-## Usage
-
-## Installation
+WIP. Don't ask anything.
 
 ## Author
 
