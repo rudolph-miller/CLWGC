@@ -16,11 +16,14 @@
   :version "0.1"
   :author "Rudolph-Miller"
   :license "MIT"
-  :depends-on (:esrap)
+  :depends-on (:esrap
+               :cl-ppcre)
   :components ((:module "src"
+                :serial t
                 :components
-                ((:file "clwgc"))))
-  :description ""
+                ((:file "parser")
+                 (:file "clwgc"))))
+  :description "WIP"
   :long-description
   #.(with-open-file (stream (merge-pathnames
                              #p"README.md"
