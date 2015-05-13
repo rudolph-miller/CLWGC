@@ -144,4 +144,35 @@
   (ok (not (pair-p (make-cons (make-integer 1) *nil*)))
       "can return NIL."))
 
+
+(subtest "ast-equal"
+  (subtest "T"
+    (ok (ast-equal (make-integer 1) (make-integer 1))
+        "with <atom>.")
+
+    (ok (ast-equal (make-cons (make-integer 1)
+                              (make-cons (make-integer 2)
+                                         (make-integer 3)))
+                   (make-cons (make-integer 1)
+                              (make-cons (make-integer 2)
+                                         (make-integer 3))))
+        "with <cons>."))
+
+  (subtest "NIL"
+    (ok (not (ast-equal (make-integer 1)
+                        (make-sym "sym")))
+        "with not same objects.")
+
+    (ok (not (ast-equal (make-integer 1)
+                        (make-integer 2)))
+        "with <atom>.")
+
+    (ok (not (ast-equal (make-cons (make-integer 1)
+                              (make-cons (make-integer 2)
+                                         (make-integer 3)))
+                   (make-cons (make-integer 1)
+                              (make-cons (make-integer 2)
+                                         (make-integer 4)))))
+        "with <cons>.")))
+
 (finalize)

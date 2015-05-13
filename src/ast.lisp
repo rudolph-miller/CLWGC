@@ -21,7 +21,8 @@
            :null-p
            :atom-p
            :cons-p
-           :pair-p))
+           :pair-p
+           :ast-equal))
 (in-package :clwgc.ast)
 
 (defparameter *debug-mode* nil)
@@ -102,3 +103,14 @@
                        (sub (cons-cdr cons) acc))))))
     (format stream "(~{~a~^ ~})"
             (nreverse (sub obj nil)))))
+
+
+(defun ast-equal (obj1 obj2)
+  (when (typep obj1 (type-of obj2))
+    (etypecase obj1
+      (<cons> (and (ast-equal (cons-car obj1)
+                              (cons-car obj2))
+                   (ast-equal (cons-cdr obj1)
+                              (cons-cdr obj2))))
+      (<atom> (equal (content obj1)
+                     (content obj2))))))
