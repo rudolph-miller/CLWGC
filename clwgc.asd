@@ -17,7 +17,8 @@
   :author "Rudolph-Miller"
   :license "MIT"
   :depends-on (:esrap
-               :cl-ppcre)
+               :cl-ppcre
+               :llvm)
   :components ((:module "src"
                 :serial t
                 :components
