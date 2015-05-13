@@ -15,7 +15,9 @@
                :prove)
   :components ((:module "t"
                 :components
-                ((:test-file "parser")
+                ((:file "init")
+                 (:test-file "ast")
+                 (:test-file "parser")
                  (:test-file "clwgc"))))
 
   :defsystem-depends-on (:prove-asdf)

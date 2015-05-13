@@ -22,7 +22,8 @@
   :components ((:module "src"
                 :serial t
                 :components
-                ((:file "parser")
+                ((:file "ast")
+                 (:file "parser")
                  (:file "clwgc"))))
   :description "WIP"
   :long-description
