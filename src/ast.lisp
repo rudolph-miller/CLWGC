@@ -22,7 +22,9 @@
            :atom-p
            :cons-p
            :pair-p
-           :ast-equal))
+           :ast-equal
+           :make-lst
+           :make-lst*))
 (in-package :clwgc.ast)
 
 (defparameter *debug-mode* nil)
@@ -47,6 +49,16 @@
    (cdr :initarg :cdr
         :reader cons-cdr)))
 
+(defclass <nil> (<ast>) ())
+
+(defparameter *nil* (make-instance '<nil>))
+
+(defmethod cons-car ((obj <nil>))
+  *nil*)
+
+(defmethod cons-cdr ((obj <nil>))
+  *nil*)
+
 (defun make-integer (integer)
   (make-instance '<integer> :content integer))
 
@@ -62,16 +74,16 @@
 (defun make-cons (car cdr)
   (make-instance '<cons> :car car :cdr cdr))
 
-(defparameter *nil* (make-cons nil nil))
-
 (defun null-p (obj)
   (eql obj *nil*))
 
 (defun atom-p (obj)
-  (typep obj '<atom>))
+  (or (null-p obj)
+      (typep obj '<atom>)))
 
 (defun cons-p (obj)
-  (typep obj '<cons>))
+  (or (null-p obj)
+      (typep obj '<cons>)))
 
 (defun pair-p (obj)
   (and (cons-p obj)
@@ -104,13 +116,29 @@
     (format stream "(~{~a~^ ~})"
             (nreverse (sub obj nil)))))
 
+(defmethod print-object ((obj <nil>) stream)
+  (declare (ignore obj))
+  (format stream "NIL"))
 
 (defun ast-equal (obj1 obj2)
   (when (typep obj1 (type-of obj2))
-    (etypecase obj1
-      (<cons> (and (ast-equal (cons-car obj1)
-                              (cons-car obj2))
-                   (ast-equal (cons-cdr obj1)
-                              (cons-cdr obj2))))
-      (<atom> (equal (content obj1)
-                     (content obj2))))))
+    (if (and (null-p obj1)
+             (null-p obj2))
+        t
+        (etypecase obj1
+          (<cons> (and (ast-equal (cons-car obj1)
+                                  (cons-car obj2))
+                       (ast-equal (cons-cdr obj1)
+                                  (cons-cdr obj2))))
+          (<atom> (equal (content obj1)
+                         (content obj2)))))))
+
+(defun make-lst (&rest objs)
+  (reduce #'(lambda (cdr car)
+              (make-cons car cdr))
+          (cons *nil* (nreverse objs))))
+
+(defun make-lst* (&rest objs)
+  (reduce #'(lambda (cdr car)
+              (make-cons car cdr))
+          (nreverse objs)))

@@ -125,10 +125,16 @@
       "can return NIL."))
 
 (subtest "atom-p"
-  (ok (atom-p (make-sym "sym"))
-      "can return T.")
+  (subtest "T"
+    (ok (atom-p (make-sym "sym"))
+        "with <atom>.")
 
-  (ok (not (atom-p (make-cons (make-integer 1) *nil*)))))
+    (ok (atom-p *nil*)
+        "with NIL."))
+
+  (subtest "NIL"
+    (ok (not (atom-p (make-cons (make-integer 1) *nil*)))
+        "ok.")))
 
 (subtest "cons-p"
   (ok (cons-p (make-cons (make-integer 1) *nil*))
@@ -144,9 +150,11 @@
   (ok (not (pair-p (make-cons (make-integer 1) *nil*)))
       "can return NIL."))
 
-
 (subtest "ast-equal"
   (subtest "T"
+    (ok (ast-equal *nil* *nil*)
+        "with *nil*.")
+
     (ok (ast-equal (make-integer 1) (make-integer 1))
         "with <atom>.")
 
@@ -168,11 +176,24 @@
         "with <atom>.")
 
     (ok (not (ast-equal (make-cons (make-integer 1)
-                              (make-cons (make-integer 2)
-                                         (make-integer 3)))
-                   (make-cons (make-integer 1)
-                              (make-cons (make-integer 2)
-                                         (make-integer 4)))))
+                                   (make-cons (make-integer 2)
+                                              (make-integer 3)))
+                        (make-cons (make-integer 1)
+                                   (make-cons (make-integer 2)
+                                              (make-integer 4)))))
         "with <cons>.")))
+
+(subtest "make-lst"
+  (is-ast (make-lst (make-integer 1) (make-integer 2))
+          (make-cons (make-integer 1)
+                     (make-cons (make-integer 2)
+                                *nil*))
+          "ok."))
+
+(subtest "make-lst*"
+  (is-ast (make-lst* (make-integer 1) (make-integer 2))
+          (make-cons (make-integer 1)
+                     (make-integer 2))
+          "ok."))
 
 (finalize)

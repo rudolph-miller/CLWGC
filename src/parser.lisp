@@ -2,7 +2,8 @@
 (defpackage clwgc.parser
   (:use :cl
         :cl-ppcre
-        :esrap)
+        :esrap
+        :clwgc.ast)
   (:shadow :parse)
   (:export :parse))
 (in-package clwgc.parser)
@@ -23,20 +24,33 @@
     (let ((text (text list)))
       (cond
         ((integer-p text)
-         (read-from-string text))
+         (make-integer (read-from-string text)))
         ((float-p text)
-         (read-from-string text))
-        (t text)))))
+         (make-float (read-from-string text)))
+        (t
+         (if (string-equal text "NIL")
+             *nil*
+             (make-sym text)))))))
 
 (defrule string (and #\" (* (not #\")) #\")
   (:destructure (op inner cp)
     (declare (ignore op cp))
-    (text inner)))
+    (make-str (text inner))))
 
-(defrule list (and #\( (* sexp) (? whitespace) #\))
+(defrule list (and #\( (* (or #\. sexp)) (? whitespace) #\))
   (:destructure (op inner w cp)
     (declare (ignore op w cp))
-    inner))
+    (let ((len (length inner)))
+      (if (or (= len 1)
+              (and (= len 2)
+                   (null-p (cadr inner))))
+          (make-cons (car inner) *nil*)
+          (let ((dot (position "." inner :test #'equal)))
+            (if dot
+                (if (= (1+ dot) (1- len))
+                    (apply #'make-lst* (remove "." inner :test #'equal))
+                    (error "More than one object follows . in list."))
+                (apply #'make-lst inner)))))))
 
 (defrule sexp (and (? whitespace)
                    (or list string atom)
