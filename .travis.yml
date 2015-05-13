@@ -3,8 +3,8 @@ sudo: yes
 
 env:
   matrix:
-    - LISP=sbcl COVERALLS=true C_INCLUDE_PATH=/usr/include:$C_INCLUDE_PATH
-    - LISP=ccl C_INCLUDE_PATH=/usr/include:$C_INCLUDE_PATH
+    - LISP=sbcl COVERALLS=true
+    - LISP=ccl
 
 before_install:
   # LLVM
@@ -19,6 +19,7 @@ install:
 
   # LLVM
   - sudo apt-get -qq install llvm-3.5 llvm-3.5-dev llvm-3.5-runtime libllvm3.5
+  - export C_INCLUDE_PATH=`llvm-config --prefix`/include:$C_INCLUDE_PATH
 
 before_script:
   - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
