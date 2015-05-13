@@ -7,6 +7,7 @@ env:
     - LISP=ccl
 
 before_install:
+  # LLVM
   - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
   - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
   - sudo add-apt-repository -y 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise main'
@@ -15,8 +16,9 @@ before_install:
 install:
   # Install cl-travis.
   - curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | bash
+
   # LLVM
-  - sudo apt-get -qq install llvm
+  - sudo apt-get -qq install llvm-3.5 llvm-3.5-dev llvm-3.5-runtime libllvm3.5
 
 before_script:
   - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
