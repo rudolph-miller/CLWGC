@@ -26,6 +26,4 @@ before_script:
 
 script:
   - cl -l prove -l cl-coveralls
-       -e '(or (coveralls:with-coveralls (:exclude (list "t"))
-                 (prove:run :clwgc-test))
-               (uiop:quit -1))'
+       -e '(prove:run :clwgc-test)'
