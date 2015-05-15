@@ -5,7 +5,7 @@
   (:import-from :alexandria
                 :symbolicate)
   (:export :<expression>
-           :<costant>
+           :<constant>
            :<variable>
            :<form>
            :<special-form>
@@ -14,7 +14,11 @@
            :value
            :exp-type
            :name
-           :label
+           :make-constant
+           :make-variable
+           :make-special-form
+           :make-macro-form
+           :make-functior-form
            :<env>
            :vars
            :fns
@@ -28,7 +32,7 @@
 
 (defclass <expression> () ())
 
-(defclass <costant> (<expression>)
+(defclass <constant> (<expression>)
   ((value :initarg :value
           :reader value)
    (type :initarg :type
@@ -43,8 +47,8 @@
          :reader exp-type)))
 
 (defclass <form> (<expression>)
-  ((label :initarg :label
-          :reader label)
+  ((name :initarg :name
+          :reader name)
    (args :initarg :args
          :reader exp-type)))
 
@@ -57,6 +61,21 @@
 (defclass <function-form> (<form>)
   ((type :initarg :type
          :reader exp-typ)))
+
+(defun make-constant (value type)
+  (make-instance '<constant> :value value :type type))
+
+(defun make-variable (name value type)
+  (make-instance '<variable> :name name :value value :type type))
+
+(defun make-special-form (name args type)
+  (make-instance '<special-form> :name name :args args :type type))
+
+(defun make-macro-form (name args)
+  (make-instance '<macro-form> :name name :args args))
+
+(defun make-functior-form (name args type)
+  (make-instance '<function-form> :name name :args args :type type))
 
 (defclass <env> ()
   ((vars :initarg :vars

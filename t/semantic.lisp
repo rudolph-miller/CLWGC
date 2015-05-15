@@ -11,15 +11,25 @@
 (plan nil)
 
 
-(subtest "<constant>")
+(subtest "<constant>"
+  (ok (make-constant 1 :integer)
+      "can make-constant."))
 
-(subtest "<variable>")
+(subtest "<variable>"
+  (ok (make-variable "var" (make-constant 1 :integer) :integer)
+      "can make-variable."))
 
-(subtest "<special-form>")
+(subtest "<special-form>"
+  (ok (make-special-form "special" (list 1) (cons (list :integer) (list :integer)))
+      "can make-special-form."))
 
-(subtest "<macro-form>")
+(subtest "<macro-form>"
+  (ok (make-macro-form "macro" (list 1))
+      "can make-macro-form."))
 
-(subtest "<function-form>")
+(subtest "<function-form>"
+  (ok (make-functior-form "fun" (list 1) (cons (list :integer) (list :integer)))
+      "can make-functior-form."))
 
 (subtest "<env>"
   (let* ((env1 (make-instance '<env>))
