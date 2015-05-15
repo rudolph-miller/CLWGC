@@ -176,7 +176,7 @@
   (subtest "NIL"
     (ok (not (ast-equal (make-integer 1)
                         (make-sym "sym")))
-        "with not same objects.")
+        "with different types.")
 
     (ok (not (ast-equal (make-integer 1)
                         (make-integer 2)))

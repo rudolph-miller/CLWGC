@@ -18,7 +18,8 @@
            :make-variable
            :make-special-form
            :make-macro-form
-           :make-functior-form
+           :make-function-form
+           :exp-equal
            :<env>
            :vars
            :fns
@@ -27,7 +28,8 @@
            :add-var
            :add-fn
            :get-var
-           :get-fn))
+           :get-fn
+           :semanticize))
 (in-package :clwgc.semantic)
 
 (defclass <expression> () ())
@@ -50,7 +52,7 @@
   ((name :initarg :name
           :reader name)
    (args :initarg :args
-         :reader exp-type)))
+         :reader args)))
 
 (defclass <special-form> (<form>)
   ((type :initarg :type
@@ -60,7 +62,7 @@
 
 (defclass <function-form> (<form>)
   ((type :initarg :type
-         :reader exp-typ)))
+         :reader exp-type)))
 
 (defun make-constant (value type)
   (make-instance '<constant> :value value :type type))
@@ -74,9 +76,25 @@
 (defun make-macro-form (name args)
   (make-instance '<macro-form> :name name :args args))
 
-(defun make-functior-form (name args type)
+(defun make-function-form (name args type)
   (make-instance '<function-form> :name name :args args :type type))
 
+(defun exp-equal (a b)
+  (and (typep a (type-of b))
+       (etypecase a
+         (<constant> (and (equal (value a) (value b))
+                          (equal (exp-type a) (exp-type b))))
+         (<variable> (and (equal (name a) (name b))
+                          (exp-equal (value a) (value b))
+                          (equal (exp-type a) (exp-type b))))
+         (<special-form> (and (equal (name a) (name b))
+                              (equalp (args a) (args b))
+                              (equalp (exp-type a) (exp-type b))))
+         (<macro-form> (and (equal (name a) (name b))
+                            (equalp (args a) (args b))))
+         (<function-form> (and (equal (name a) (name b))
+                               (equalp (args a) (args b))
+                               (equalp (exp-type a) (exp-type b)))))))
 (defclass <env> ()
   ((vars :initarg :vars
          :accessor vars
@@ -110,3 +128,24 @@
 
 (defun get-fn (name &optional (env *current-env*))
   (get-smt fn))
+
+(defgeneric semanticize (obj))
+
+(defmethod semanticize ((obj <integer>))
+  (make-constant (content obj) :integer))
+
+(defmethod semanticize ((obj <float>))
+  (make-constant (content obj) :float))
+
+(defmethod semanticize ((obj <symbol>))
+  (let ((val (get-var (content obj))))
+    (if val
+        val
+        (error "The variable ~a is undefined." (content obj)))))
+
+(defmethod semanticize ((obj <string>))
+  (make-constant (content obj) :string))
+
+(defmethod semanticize ((obj <cons>)))
+;; special, macro, function.
+
