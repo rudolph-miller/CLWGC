@@ -16,7 +16,8 @@
   :version "0.1"
   :author "Rudolph-Miller"
   :license "MIT"
-  :depends-on (:esrap
+  :depends-on (:alexandria
+               :esrap
                :cl-ppcre
                :llvm)
   :components ((:module "src"
@@ -24,6 +25,7 @@
                 :components
                 ((:file "ast")
                  (:file "parser")
+                 (:file "semantic")
                  (:file "clwgc"))))
   :description "WIP"
   :long-description
