@@ -150,6 +150,13 @@
   (ok (not (pair-p (make-cons (make-integer 1) *nil*)))
       "can return NIL."))
 
+(subtest "list-p"
+  (ok (list-p (make-lst (make-integer 1) (make-integer 2)))
+      "can return T.")
+
+  (ok (not (list-p (make-lst* (make-integer 1) (make-integer 2))))
+      "can return NIL."))
+
 (subtest "ast-equal"
   (subtest "T"
     (ok (ast-equal *nil* *nil*)

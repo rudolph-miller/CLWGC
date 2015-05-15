@@ -22,6 +22,7 @@
            :atom-p
            :cons-p
            :pair-p
+           :list-p
            :ast-equal
            :make-lst
            :make-lst*))
@@ -89,6 +90,11 @@
   (and (cons-p obj)
        (atom-p (cons-cdr obj))
        (not (null-p (cons-cdr obj)))))
+
+(defun list-p (obj)
+  (or (null-p obj)
+      (when (cons-p (cons-cdr obj))
+          (list-p (cons-cdr obj)))))
 
 (defmethod print-object ((obj <atom>) stream)
   (apply #'format stream
