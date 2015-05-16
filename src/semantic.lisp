@@ -149,3 +149,4 @@
 (defmethod semanticize ((obj <cons>)))
 ;; special, macro, function.
 
+(defmethod semanticize ((obj <nil>)))

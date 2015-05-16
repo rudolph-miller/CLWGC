@@ -9,6 +9,7 @@
            :<symbol>
            :<string>
            :<cons>
+           :<nil>
            :make-integer
            :make-float
            :make-sym
