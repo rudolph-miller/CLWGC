@@ -45,16 +45,16 @@
                     (make-variable "var" (make-constant 1 :integer) :integer)
                     "with <variable>.")
 
-      (exp-equal-ok (make-special-form "special" (list 1) (cons (list :integer) (list :integer)))
-                    (make-special-form "special" (list 1) (cons (list :integer) (list :integer)))
+      (exp-equal-ok (make-special-form "special" (list (make-integer 1)) (cons (list :integer) (list :integer)))
+                    (make-special-form "special" (list (make-integer 1)) (cons (list :integer) (list :integer)))
                     "with <special-form>.")
 
-      (exp-equal-ok (make-macro-form "macro" (list 1))
-                    (make-macro-form "macro" (list 1))
+      (exp-equal-ok (make-macro-form "macro" (list (make-integer 1)))
+                    (make-macro-form "macro" (list (make-integer 1)))
                     "with <macro-form>.")
 
-      (exp-equal-ok (make-function-form "fun" (list 1) (cons (list :integer) (list :integer)))
-                    (make-function-form "fun" (list 1) (cons (list :integer) (list :integer)))
+      (exp-equal-ok (make-function-form "fun" (list (make-integer 1)) (cons (list :integer) (list :integer)))
+                    (make-function-form "fun" (list (make-integer 1)) (cons (list :integer) (list :integer)))
                     "with <function-form>.")))
 
   (subtest "NIL"
@@ -88,45 +88,45 @@
                           "with different types."))
 
       (subtest "<special-form>"
-        (exp-equal-not-ok (make-special-form "special1" (list 1) (cons (list :integer) (list :integer)))
-                          (make-special-form "special2" (list 1) (cons (list :integer) (list :integer)))
+        (exp-equal-not-ok (make-special-form "special1" (list (make-integer 1)) (cons (list :integer) (list :integer)))
+                          (make-special-form "special2" (list (make-integer 1)) (cons (list :integer) (list :integer)))
                           "with different names.")
 
-        (exp-equal-not-ok (make-special-form "special" (list 1) (cons (list :integer) (list :integer)))
+        (exp-equal-not-ok (make-special-form "special" (list (make-integer 1)) (cons (list :integer) (list :integer)))
                           (make-special-form "special" (list 2) (cons (list :integer) (list :integer)))
                           "with different args.")
 
-        (exp-equal-not-ok (make-special-form "special" (list 1) (cons (list :integer) (list :integer)))
-                          (make-special-form "special" (list 1) (cons (list :integer) (list :float)))
+        (exp-equal-not-ok (make-special-form "special" (list (make-integer 1)) (cons (list :integer) (list :integer)))
+                          (make-special-form "special" (list (make-integer 1)) (cons (list :integer) (list :float)))
                           "with different types."))
 
       (subtest "<macro-form>"
-        (exp-equal-not-ok (make-macro-form "macro1" (list 1))
-                          (make-macro-form "macro2" (list 1))
+        (exp-equal-not-ok (make-macro-form "macro1" (list (make-integer 1)))
+                          (make-macro-form "macro2" (list (make-integer 1)))
                           "with different names.")
 
-        (exp-equal-not-ok (make-macro-form "macro" (list 1))
-                          (make-macro-form "macro" (list 2))
+        (exp-equal-not-ok (make-macro-form "macro" (list (make-integer 1)))
+                          (make-macro-form "macro" (list (make-integer 2)))
                           "with different types."))
 
       (subtest "<function-form>"
-        (exp-equal-not-ok (make-function-form "function1" (list 1) (cons (list :integer) (list :integer)))
-                          (make-function-form "function2" (list 1) (cons (list :integer) (list :integer)))
+        (exp-equal-not-ok (make-function-form "function1" (list (make-integer 1)) (cons (list :integer) (list :integer)))
+                          (make-function-form "function2" (list (make-integer 1)) (cons (list :integer) (list :integer)))
                           "with different names.")
 
-        (exp-equal-not-ok (make-function-form "function" (list 1) (cons (list :integer) (list :integer)))
-                          (make-function-form "function" (list 2) (cons (list :integer) (list :integer)))
+        (exp-equal-not-ok (make-function-form "function" (list (make-integer 1)) (cons (list :integer) (list :integer)))
+                          (make-function-form "function" (list (make-integer 2)) (cons (list :integer) (list :integer)))
                           "with different args.")
 
-        (exp-equal-not-ok (make-function-form "function" (list 1) (cons (list :integer) (list :integer)))
-                          (make-function-form "function" (list 1) (cons (list :integer) (list :float)))
+        (exp-equal-not-ok (make-function-form "function" (list (make-integer 1)) (cons (list :integer) (list :integer)))
+                          (make-function-form "function" (list (make-integer 1)) (cons (list :integer) (list :float)))
                           "with different types.")))))
 
 (subtest "<env>"
-  (let* ((env1 (make-instance '<env>))
-         (env2 (make-instance '<env> :parent env1))
+  (let* ((env1 (make-env))
+         (env2 (make-env env1))
          (*current-env* env2))
-    (subtest "make-instance"
+    (subtest "make-env"
       (ok env1
           "without :parent.")
 
@@ -183,10 +183,56 @@
                       (make-constant "string" :string)
                       "<string>.")
 
-    (skip 1 "with <cons>.") ;; special, macro, function.
-
     (semanticize-test (parse "nil")
                       (make-constant *nil* :nil) "*nil*.")
-    ))
+
+    (subtest "<cons>"
+      (let ((*current-env* (make-env)))
+        (semanticize-test (parse "(setq var 1)")
+                          (make-special-form "setq" (list (make-sym "var") (make-integer 1)) :integer)
+                          "<special-form>.")
+        
+        (skip 1 "macro-form")
+        (skip 1 "function-form")))))
+
+(subtest "semanticize-special-op"
+  (macrolet ((semanticize-special-op-test (target expect &optional comment)
+               `(is (apply #'semanticize-special-op ,target)
+                    ,expect
+                    ,@(when comment (list comment))
+                    :test #'exp-equal)))
+    (skip 1 "block")
+    (skip 1 "catch")
+    (skip 1 "eval-when")
+    (skip 1 "flet")
+    (skip 1 "function")
+    (skip 1 "go")
+    (skip 1 "if")
+    (skip 1 "labels")
+    (skip 1 "let")
+    (skip 1 "let*")
+    (skip 1 "load-time-value")
+    (skip 1 "lacally")
+    (skip 1 "macrolet")
+    (skip 1 "multiple-value-call")
+    (skip 1 "multiple-value-prog1")
+    (skip 1 "progn")
+    (skip 1 "prigv")
+    (skip 1 "quote")
+    (skip 1 "returv-from")
+    (subtest "setq"
+      (let ((*current-env* (make-env)))
+        (semanticize-special-op-test (list :setq (list (make-sym "var") (make-integer 1)))
+                                     (make-special-form "setq" (list (make-sym "var") (make-integer 1)) :integer)
+                                     "can return <special-form>.")
+        (is (get-var "var")
+            (make-constant 1 :integer)
+            :test #'exp-equal
+            "can add-var.")))
+    (skip 1 "symbol-macrolet")
+    (skip 1 "tagbody")
+    (skip 1 "the")
+    (skip 1 "throw")
+    (skip 1 "unwind-pretect")))
 
 (finalize)

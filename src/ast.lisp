@@ -26,7 +26,8 @@
            :list-p
            :ast-equal
            :make-lst
-           :make-lst*))
+           :make-lst*
+           :cons-rest))
 (in-package :clwgc.ast)
 
 (defparameter *debug-mode* nil)
@@ -149,3 +150,22 @@
   (reduce #'(lambda (cdr car)
               (make-cons car cdr))
           (nreverse objs)))
+
+(defun cons-rest (obj)
+  (and (cons-p obj)
+       (not (pair-p obj))
+       (labels ((sub (obj acc)
+                  (let ((car (cons-car obj))
+                        (cdr (cons-cdr obj)))
+                    (cond
+                      ((null-p cdr)
+                       (push car acc)
+                       (push nil acc)
+                       acc)
+                      ((cons-p cdr)
+                       (push car acc)
+                       (sub cdr acc))
+                      (t (push car acc)
+                         (push cdr acc)
+                         acc)))))
+         (apply #'list* (nreverse (sub (cons-cdr obj) nil))))))

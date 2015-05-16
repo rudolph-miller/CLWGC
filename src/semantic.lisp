@@ -3,7 +3,8 @@
   (:use :cl
         :clwgc.ast)
   (:import-from :alexandria
-                :symbolicate)
+                :symbolicate
+                :make-keyword)
   (:export :<expression>
            :<constant>
            :<variable>
@@ -21,6 +22,7 @@
            :make-function-form
            :exp-equal
            :<env>
+           :make-env
            :vars
            :fns
            :parent
@@ -29,7 +31,8 @@
            :add-fn
            :get-var
            :get-fn
-           :semanticize))
+           :semanticize
+           :semanticize-special-op))
 (in-package :clwgc.semantic)
 
 (defclass <expression> () ())
@@ -88,13 +91,14 @@
                           (exp-equal (value a) (value b))
                           (equal (exp-type a) (exp-type b))))
          (<special-form> (and (equal (name a) (name b))
-                              (equalp (args a) (args b))
+                              (every #'ast-equal (args a) (args b))
                               (equalp (exp-type a) (exp-type b))))
          (<macro-form> (and (equal (name a) (name b))
-                            (equalp (args a) (args b))))
+                            (every #'ast-equal (args a) (args b))))
          (<function-form> (and (equal (name a) (name b))
-                               (equalp (args a) (args b))
+                               (every #'ast-equal (args a) (args b))
                                (equalp (exp-type a) (exp-type b)))))))
+
 (defclass <env> ()
   ((vars :initarg :vars
          :accessor vars
@@ -105,6 +109,9 @@
    (parent :initarg :parent
            :reader parent
            :initform nil)))
+
+(defun make-env (&optional parent)
+  (make-instance '<env> :parent parent))
 
 (defparameter *current-env* nil)
 
@@ -129,6 +136,51 @@
 (defun get-fn (name &optional (env *current-env*))
   (get-smt fn))
 
+(defparameter *special-ops*
+  (mapcar #'(lambda (name)
+              (cons name (make-keyword (string-upcase name))))
+          (list "block"
+                "catch"
+                "eval-when"
+                "flet"
+                "function"
+                "go"
+                "if"
+                "labels"
+                "let"
+                "let*"
+                "load-time-value"
+                "lacally"
+                "macrolet"
+                "multiple-value-call"
+                "multiple-value-prog1"
+                "progn"
+                "prigv"
+                "quote"
+                "returv-from"
+                "setq"
+                "symbol-macrolet"
+                "tagbody"
+                "the"
+                "throw"
+                "unwind-pretect")))
+
+(defun special-op-p (name)
+  (when (member name *special-ops*
+                :test #'string-equal
+                :key #'car)
+    t))
+
+(defun special-op-keyword (name)
+  (cdr (assoc name *special-ops*
+              :test #'string-equal)))
+
+(defun special-op-name (keyword)
+  (car (find keyword *special-ops* :key #'cdr)))
+
+(defun macro-p (obj)
+  (typep obj '<macro-form>))
+
 (defgeneric semanticize (obj))
 
 (defmethod semanticize ((obj <integer>))
@@ -146,9 +198,26 @@
 (defmethod semanticize ((obj <string>))
   (make-constant (content obj) :string))
 
-(defmethod semanticize ((obj <cons>)))
-;; special, macro, function.
-
 (defmethod semanticize ((obj <nil>))
   (declare (ignore obj))
   (make-constant *nil* :nil))
+
+(defmethod semanticize ((obj <cons>))
+  (let* ((name (content (cons-car obj)))
+         (args (cons-rest obj))
+         (fn (get-fn name)))
+    (cond
+      ((special-op-p name) (semanticize-special-op name args))
+      ((and fn (macro-p fn)) nil)
+      (fn nil)
+      (t (error "The function ~a is undefined." name)))))
+
+(defgeneric semanticize-special-op (name args)
+  (:method ((name t) args)
+    (semanticize-special-op (special-op-keyword name) args)))
+
+(defmethod semanticize-special-op ((keyword (eql :setq)) args)
+  (let ((var-name (content (car args)))
+        (var-val (cadr args)))
+    (add-var var-name (semanticize var-val))
+    (make-special-form (special-op-name keyword) args :integer)))
