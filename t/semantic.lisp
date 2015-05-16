@@ -182,9 +182,11 @@
     (semanticize-test (parse "\"string\"")
                       (make-constant "string" :string)
                       "<string>.")
+
     (skip 1 "with <cons>.") ;; special, macro, function.
 
-    (skip 1 "with *nil*.")
+    (semanticize-test (parse "nil")
+                      (make-constant *nil* :nil) "*nil*.")
     ))
 
 (finalize)

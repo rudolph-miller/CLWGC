@@ -149,4 +149,6 @@
 (defmethod semanticize ((obj <cons>)))
 ;; special, macro, function.
 
-(defmethod semanticize ((obj <nil>)))
+(defmethod semanticize ((obj <nil>))
+  (declare (ignore obj))
+  (make-constant *nil* :nil))
