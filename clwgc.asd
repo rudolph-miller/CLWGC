@@ -26,6 +26,7 @@
                 ((:file "ast")
                  (:file "parser")
                  (:file "semantic")
+                 (:file "llvm")
                  (:file "clwgc"))))
   :description "WIP"
   :long-description
