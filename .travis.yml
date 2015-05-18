@@ -4,7 +4,6 @@ sudo: yes
 env:
   matrix:
     - LISP=sbcl
-    - LISP=ccl
 
 before_install:
   # LLVM
