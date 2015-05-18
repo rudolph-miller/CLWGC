@@ -153,15 +153,15 @@
     cons))
 
 (defun get-car (cons &optional (name "tmp"))
-  (llvm:build-struct-gep *builder* cons 0 name))
+  (load-var (llvm:build-struct-gep *builder* cons 0 name)))
 
 (defun get-cdr (cons &optional (name "tmp"))
-  (llvm:build-struct-gep *builder* cons 1 name))
+  (load-var (llvm:build-struct-gep *builder* cons 1 name)))
 
 (defun (setf get-car) (val cons)
-  (let ((car (get-car cons)))
+  (let ((car (llvm:build-struct-gep *builder* cons 0 "tmp")))
     (store-var car val)))
 
 (defun (setf get-cdr) (val cons)
-  (let ((cdr (get-cdr cons)))
+  (let ((cdr (llvm:build-struct-gep *builder* cons 1 "tmp")))
     (store-var cdr val)))

@@ -19,6 +19,7 @@
                  (:test-file "ast")
                  (:test-file "parser")
                  (:test-file "semantic")
+                 (:test-file "llvm")
                  (:test-file "clwgc"))))
 
   :defsystem-depends-on (:prove-asdf)

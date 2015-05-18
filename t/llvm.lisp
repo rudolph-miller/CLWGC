@@ -223,7 +223,7 @@
   (with-module
     (let ((main (add-function-and-move-into "main" nil :integer))
           (i (make-cons (constant :integer 1) (constant :integer 2))))
-      (ret (load-var (get-car i)))
+      (ret (get-car i))
       (is (run main)
           1
           "can get."))
@@ -231,7 +231,7 @@
     (let ((main (add-function-and-move-into "main" nil :integer))
           (i (make-cons (constant :integer 1) (constant :integer 2))))
       (setf (get-car i) (constant :integer 2))
-      (ret (load-var (get-car i)))
+      (ret (get-car i))
       (is (run main)
           2
           "can setf."))))
@@ -240,7 +240,7 @@
   (with-module
     (let ((main (add-function-and-move-into "main" nil :integer))
           (i (make-cons (constant :integer 1) (constant :integer 2))))
-      (ret (load-var (get-cdr i)))
+      (ret (get-cdr i))
       (is (run main)
           2
           "can get."))
@@ -248,7 +248,7 @@
     (let ((main (add-function-and-move-into "main" nil :integer))
           (i (make-cons (constant :integer 1) (constant :integer 2))))
       (setf (get-cdr i) (constant :integer 1))
-      (ret (load-var (get-cdr i)))
+      (ret (get-cdr i))
       (is (run main)
           1
           "can setf."))))
