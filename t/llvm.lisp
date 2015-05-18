@@ -55,7 +55,7 @@
 (subtest "append-block"
   (with-module
     (let ((main (add-function "main" nil nil)))
-      (append-block main "entry")
+      (append-block "entry")
       (is (llvm:count-basic-blocks main)
           1
           "con add block."))))
@@ -75,14 +75,14 @@
   (with-module
     (skip 1 "can not get current block.")))
 
-(subtest "args"
+(subtest "params"
   (with-module
     (let ((main (add-function "main" (list :integer) :integer)))
-      (is (length (args main))
+      (is (length (params main))
           1
           "with function pointer.")
 
-      (is (length (args "main"))
+      (is (length (params "main"))
           1
           "with string."))))
 
@@ -136,7 +136,7 @@
 (subtest "br"
   (with-module
     (let* ((main (add-function-and-move-into "main" nil :integer))
-           (end (append-block main "end")))
+           (end (append-block "end")))
       (br end)
       (move-to end)
       (ret (constant :integer 1))
@@ -147,9 +147,9 @@
 (subtest "cond-br"
   (with-module
     (let* ((main (add-function-and-move-into "main" (list :bool) :integer))
-           (then (append-block main "then"))
-           (else (append-block main "else")))
-      (cond-br (car (args main)) then else)
+           (then (append-block "then"))
+           (else (append-block "else")))
+      (cond-br (car (params main)) then else)
       (move-to then)
       (ret (constant :integer 1))
       (move-to else)
@@ -167,9 +167,9 @@
             "then with 0 in int1.")))
 
     (let* ((main (add-function-and-move-into "main" (list :integer) :integer))
-           (then (append-block main "then"))
-           (else (append-block main "else")))
-      (cond-br (car (args main)) then else)
+           (then (append-block "then"))
+           (else (append-block "else")))
+      (cond-br (car (params main)) then else)
       (move-to then)
       (ret (constant :integer 1))
       (move-to else)
@@ -189,7 +189,7 @@
 (subtest "call"
   (with-module
     (let ((main (add-function-and-move-into "main" (list :integer) :integer)))
-      (ret (car (args main)))
+      (ret (car (params main)))
       (let ((sub (add-function-and-move-into "sub" nil :integer)))
         (ret (call main (list (constant :integer 1))))
         (is (run sub)

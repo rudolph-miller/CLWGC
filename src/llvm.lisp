@@ -5,6 +5,7 @@
            :*module*
            :*ee*
            :*fpm*
+           :*current-fn*
            :*cons*
            :with-module
            :get-type
@@ -12,7 +13,7 @@
            :move-to
            :add-function
            :add-function-and-move-into
-           :args
+           :params
            :alloca
            :ret
            :constant
@@ -36,6 +37,8 @@
 (defparameter *ee* nil)
 
 (defparameter *fpm* nil)
+
+(defparameter *current-fn* nil)
 
 (defparameter *cons* nil)
 
@@ -70,7 +73,7 @@
        (llvm:initialize-function-pass-manager *fpm*)
        ,@body)))
 
-(defun append-block (fn name)
+(defun append-block (name &optional (fn *current-fn*))
   (llvm:append-basic-block fn name))
 
 (defun move-to (block)
@@ -85,15 +88,17 @@
       (loop for i from 0
             for item in arg-t
             do (setf (aref arr i) (get-type item))))
-    (llvm:add-function *module* name
-                       (llvm:function-type ret arr))))
+    (setq *current-fn*
+          (llvm:add-function *module* name
+                       (llvm:function-type ret arr)))))
 
 (defun add-function-and-move-into (name arg-t ret-t)
   (let ((fn (add-function name arg-t ret-t)))
-    (move-to (append-block fn "entry"))
+    (setq *current-fn* fn)
+    (move-to (append-block "entry"))
     fn))
 
-(defun args (fn)
+(defun params (&optional (fn *current-fn*))
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
   (llvm:params fn))
@@ -130,17 +135,17 @@
                    (llvm:build-i-cmp *builder* :> if (constant :integer 0) "comp"))))
     (llvm:build-cond-br *builder* comp then else)))
 
-(defun call (fn &optional args (name "tmp"))
+(defun call (&optional (fn *current-fn*) args (name "tmp"))
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
   (llvm:build-call *builder* fn args name))
 
-(defun run-pass (fn)
+(defun run-pass (&optional (fn *current-fn*))
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
   (llvm:run-function-pass-manager *fpm* fn))
 
-(defun run (fn &optional args)
+(defun run (&optional (fn *current-fn*) args)
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
   (llvm:generic-value-to-int (llvm:run-function *ee* fn args) nil))
