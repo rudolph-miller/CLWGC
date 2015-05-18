@@ -203,6 +203,19 @@
                      (make-integer 2))
           "ok."))
 
+(subtest "cons-list"
+    (is (cons-list (make-lst (make-integer 1) (make-integer 2)))
+        (list (make-integer 1) (make-integer 2))
+        :test #'(lambda (a b) (every #'ast-equal a b))
+        "with list.")
+
+  (is (cons-list (make-lst* (make-integer 1) (make-integer 2) (make-integer 3)))
+      (cons (make-integer 1) (cons (make-integer 2) (make-integer 3)))
+      :test #'(lambda (a b) (and (ast-equal (car a) (car b))
+                                 (ast-equal (cadr a) (cadr b))
+                                 (ast-equal (cddr a) (cddr b))))
+      "with pair."))
+
 (subtest "cons-rest"
     (is (cons-rest (make-lst (make-integer 1) (make-integer 2)))
         (list (make-integer 2))

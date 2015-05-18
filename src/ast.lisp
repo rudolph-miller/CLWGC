@@ -27,6 +27,7 @@
            :ast-equal
            :make-lst
            :make-lst*
+           :cons-list
            :cons-rest))
 (in-package :clwgc.ast)
 
@@ -151,7 +152,7 @@
               (make-cons car cdr))
           (nreverse objs)))
 
-(defun cons-rest (obj)
+(defun cons-list (obj)
   (and (cons-p obj)
        (not (pair-p obj))
        (labels ((sub (obj acc)
@@ -168,4 +169,7 @@
                       (t (push car acc)
                          (push cdr acc)
                          acc)))))
-         (apply #'list* (nreverse (sub (cons-cdr obj) nil))))))
+         (apply #'list* (nreverse (sub obj nil))))))
+
+(defun cons-rest (obj)
+  (cdr (cons-list obj)))
