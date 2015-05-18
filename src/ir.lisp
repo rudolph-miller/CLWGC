@@ -39,6 +39,15 @@
     (ret (llvm:build-add *builder* (car (params)) (cadr (params)) "add"))
     (add-fn "+" add))
 
+  (let ((sub (add-function-and-move-into "sub" (list :integer :integer) :integer)))
+    (ret (llvm:build-sub *builder* (car (params)) (cadr (params)) "add"))
+    (add-fn "-" sub))
+
+  (let ((mul (add-function-and-move-into "mul" (list :integer :integer) :integer)))
+    (ret (llvm:build-mul *builder* (car (params)) (cadr (params)) "add"))
+    (add-fn "*" mul))
+
+
   (let ((eql (add-function-and-move-into "eql" (list :integer :integer) :bool)))
     (ret (llvm:build-i-cmp *builder* := (car (params)) (cadr (params)) "cmp"))
     (add-fn "eql" eql)
@@ -69,6 +78,7 @@
              (arg-t (loop repeat (length args)
                           collecting :integer))
              (fn (add-function-and-move-into name arg-t :integer)))
+        (add-fn name fn)
         (let ((*current-env* (make-env *current-env*)))
           (with-not-toplevel
             (loop for sym in args
@@ -80,7 +90,7 @@
                   for i from 1
                   for result = (to-ir stm)
                   finally (ret result))))
-        (add-fn name fn)
+        (run-pass fn)
         name))
     (`(if ,pred ,then ,else)
       (run-if-toplevel
@@ -131,5 +141,5 @@
             do (multiple-value-bind (cons pos)
                    (read-from-string string nil nil :start cur)
                  (setq cur pos)
-                 (print (to-ir cons))))
+                 (time (print (to-ir cons)))))
       (llvm:dump-module *module*))))
