@@ -115,7 +115,7 @@
     (let ((main (add-function-and-move-into "main" nil :integer)))
       (ret (constant :bool 1))
       (is (run main)
-          1
+          t
           ":bool."))))
 
 (subtest "store-var, load-var"
