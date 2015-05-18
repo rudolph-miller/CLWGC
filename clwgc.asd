@@ -25,7 +25,7 @@
                 :components
                 ((:file "ast")
                  (:file "parser")
-                 (:file "semantic")
+                 (:file "env")
                  (:file "llvm")
                  (:file "clwgc"))))
   :description "WIP"

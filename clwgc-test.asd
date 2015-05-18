@@ -18,7 +18,7 @@
                 ((:file "init")
                  (:test-file "ast")
                  (:test-file "parser")
-                 (:test-file "semantic")
+                 (:test-file "env")
                  (:test-file "llvm")
                  (:test-file "clwgc"))))
 
