@@ -23,6 +23,7 @@
            :br
            :cond-br
            :call
+           :incoming
            :run-pass
            :run
            :make-cons
@@ -43,13 +44,14 @@
 (defparameter *cons* nil)
 
 (defun get-type (key &optional arg)
-  (if (null key)
-      (llvm:void-type)
-      (ecase key
-        (:integer (llvm:int64-type))
-        (:bool (llvm:int1-type))
-        (:cons *cons*)
-        (:pointer (llvm:pointer-type arg)))))
+  (cond
+    ((null key) (llvm:void-type))
+    ((consp key) (get-type (car key) (get-type (cadr key))))
+    (t (ecase key
+         (:integer (llvm:int64-type))
+         (:bool (llvm:int1-type))
+         (:cons *cons*)
+         (:pointer (llvm:pointer-type arg))))))
 
 (defun declare-cons ()
   (let ((ty (llvm:struct-create-named (llvm:global-context) "cons")))
@@ -66,7 +68,7 @@
                        (*ee* llvm:execution-engine *module*)
                        (*fpm* llvm:function-pass-manager *module*))
      (with-cons-declared
-         (llvm:add-target-data (llvm:target-data *ee*) *fpm*)
+       (llvm:add-target-data (llvm:target-data *ee*) *fpm*)
        (llvm:add-promote-memory-to-register-pass *fpm*)
        (llvm:add-reassociate-pass *fpm*)
        (llvm:add-gvn-pass *fpm*)
@@ -80,17 +82,14 @@
   (llvm:position-builder *builder* block))
 
 (defun add-function (name arg-t ret-t)
-  (let ((arr (make-array (length arg-t)))
-        (ret (if (consp ret-t)
-                 (get-type (car ret-t) (get-type (cadr ret-t)))
-                 (get-type ret-t))))
+  (let ((arr (make-array (length arg-t))))
     (when arg-t
       (loop for i from 0
             for item in arg-t
             do (setf (aref arr i) (get-type item))))
     (setq *current-fn*
           (llvm:add-function *module* name
-                       (llvm:function-type ret arr)))))
+                             (llvm:function-type (get-type ret-t) arr)))))
 
 (defun add-function-and-move-into (name arg-t ret-t)
   (let ((fn (add-function name arg-t ret-t)))
@@ -140,6 +139,11 @@
     (setq fn (llvm:named-function *module* fn)))
   (llvm:build-call *builder* fn args name))
 
+(defun incoming (type pairs)
+  (let ((result (llvm:build-phi *builder* (get-type type) "result")))
+    (llvm:add-incoming result (mapcar #'car pairs) (mapcar #'cdr pairs))
+    result))
+
 (defun run-pass (&optional (fn *current-fn*))
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
@@ -148,7 +152,12 @@
 (defun run (&optional (fn *current-fn*) args)
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
-  (llvm:generic-value-to-int (llvm:run-function *ee* fn args) nil))
+  (let* ((result (llvm:run-function *ee* fn args))
+         (width (llvm:generic-value-int-width result))
+         (int (llvm:generic-value-to-int result nil)))
+    (if (= width 1)
+        (when (= int 1) t)
+        int)))
 
 (defun make-cons (car cdr)
   (let ((cons (alloca :cons)))

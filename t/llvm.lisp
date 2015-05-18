@@ -50,7 +50,11 @@
 
     (is-ptr (get-type :pointer (get-type :cons))
             (llvm:pointer-type *cons*)
-            ":pointer.")))
+            ":pointer.")
+
+    (is-ptr (get-type '(:pointer :cons))
+            (llvm:pointer-type *cons*)
+            "with list.")))
 
 (subtest "append-block"
   (with-module
@@ -195,6 +199,28 @@
         (is (run sub)
             1
             "can call function.")))))
+
+(subtest "incoming"
+  (with-module
+    (let* ((main (add-function-and-move-into "main" nil :integer))
+           (then (append-block "then"))
+           (else (append-block "else"))
+           (end (append-block "end")))
+      (cond-br (constant :bool 0) then else)
+      (move-to then)
+      (let ((then-val (init-var :integer (constant :integer 1))))
+        (br end)
+        (move-to else)
+        (let ((else-val (init-var :integer (constant :integer 2))))
+          (br end)
+          (move-to end)
+          (ret (load-var
+                (incoming '(:pointer :integer)
+                          (list (cons then-val then) (cons else-val else)))))))
+      (is (run main)
+          2
+          "can add-incoming."))))
+
 
 (subtest "run-pass"
   (with-module
