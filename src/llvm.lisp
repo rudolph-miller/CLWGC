@@ -1,7 +1,6 @@
 (in-package :cl-user)
 (defpackage clwgc.llvm
-  (:use :cl
-        :clwgc.semantic)
+  (:use :cl)
   (:export :*builder*
            :*module*
            :*ee*
