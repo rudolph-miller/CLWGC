@@ -19,7 +19,9 @@
   :depends-on (:alexandria
                :esrap
                :cl-ppcre
-               :llvm)
+               :llvm
+               :optima
+               :fare-quasiquote-extras)
   :components ((:module "src"
                 :serial t
                 :components
@@ -27,6 +29,7 @@
                  (:file "parser")
                  (:file "env")
                  (:file "llvm")
+                 (:file "ir")
                  (:file "clwgc"))))
   :description "WIP"
   :long-description
