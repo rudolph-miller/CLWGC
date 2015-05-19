@@ -8,7 +8,7 @@ env:
 before_install:
   # LLVM
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo add-apt-repository -y 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.5 main'
+  - sudo add-apt-repository -y 'deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.6 main'
   - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
   - sudo apt-get -qq update
 
@@ -17,11 +17,11 @@ install:
   - curl https://raw.githubusercontent.com/luismbo/cl-travis/master/install.sh | bash
 
   # LLVM
-  - sudo apt-get -qq install llvm-3.5 llvm-3.5-dev llvm-3.5-runtime libllvm3.5
+  - sudo apt-get -qq install llvm-3.6 llvm-3.6-dev llvm-3.6-runtime libllvm3.6
 
 before_script:
   - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
-  - git clone -b llvm-config https://github.com/Rudolph-Miller/CL-LLVM ~/lisp/CL-LLVM
+  - git clone -b issue/22 https://github.com/Rudolph-Miller/CL-LLVM ~/lisp/CL-LLVM
 
 script:
   - cl -l prove -l cl-coveralls
