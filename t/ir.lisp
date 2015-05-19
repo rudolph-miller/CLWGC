@@ -3,7 +3,6 @@
   (:use :cl
         :prove
         :clwgc-test.init
-        :clwgc.ast
         :clwgc.llvm
         :clwgc.ir)
   (:shadowing-import-from :clwgc.llvm
