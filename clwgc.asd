@@ -30,6 +30,7 @@
                  (:file "env")
                  (:file "llvm")
                  (:file "ir")
+                 (:file "compile")
                  (:file "clwgc"))))
   :description "WIP"
   :long-description
