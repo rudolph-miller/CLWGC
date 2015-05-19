@@ -47,6 +47,7 @@
   (cond
     ((null key) (llvm:void-type))
     ((consp key) (get-type (car key) (get-type (cadr key))))
+    ((cffi:pointerp key) key)
     (t (ecase key
          (:integer (llvm:int64-type))
          (:bool (llvm:int1-type))
