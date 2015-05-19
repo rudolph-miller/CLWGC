@@ -28,7 +28,7 @@
     `(let* ((,run (add-function "run" nil :integer))
             (,entry (append-block "entry" ,run)))
        (when *toplevel-p* (move-to ,entry))
-       (let ((,result (progn ,@body)))
+       (let ((,result (with-not-toplevel ,@body)))
          (if *toplevel-p*
              (progn (ret ,result)
                     (run ,run))
@@ -68,11 +68,34 @@
 (defun to-ir (cons)
   (optima:match cons
     (`(setq ,var ,val ,@rest)
-      (let* ((name (symbol-name var))
-             (bind (init-var :integer (to-ir val) name)))
-        (add-var (symbol-name var) bind)
-        (when rest
-          (to-ir (cons 'setq rest)))))
+      (run-if-toplevel
+        (let* ((name (symbol-name var))
+               (val (to-ir val))
+               (bind (init-var :integer val name)))
+
+          (add-var name bind)
+          (if rest
+              (to-ir (cons 'setq rest))
+              val))))
+    (`(progn ,@body)
+      (run-if-toplevel
+        (loop for stm in (ensure-list body)
+              for result = (to-ir stm)
+              finally (return result))))
+    (`(lambda (,@args) ,@body)
+      (with-not-toplevel
+        (let* ((arg-t (loop repeat (length args)
+                            collecting :integer))
+               (fn (add-function-and-move-into "lambda" arg-t :integer)))
+          (let ((*current-env* (make-env *current-env*)))
+            (loop for sym in args
+                  for name = (symbol-name sym)
+                  for i from 0
+                  for bind = (init-var :integer (elt (params) i) name)
+                  do (add-var name bind))
+            (ret (to-ir `(progn ,@(ensure-list body)))))
+          (run-pass fn)
+          fn)))
     (`(defun ,name-s (,@args) ,@body)
       (let* ((name (symbol-name name-s))
              (arg-t (loop repeat (length args)
@@ -86,24 +109,30 @@
                   for i from 0
                   for bind = (init-var :integer (elt (params) i) name)
                   do (add-var name bind))
-            (loop for stm in (ensure-list body)
-                  for i from 1
-                  for result = (to-ir stm)
-                  finally (ret result))))
+            (ret (to-ir `(progn ,@(ensure-list body))))))
         (run-pass fn)
         name))
+    (`(let (,@bind-forms) ,@body)
+      (run-if-toplevel
+        (let ((*current-env* (make-env *current-env*)))
+          (loop for item in bind-forms
+                for name = (symbol-name (car item))
+                do (add-var name (init-var :integer (to-ir (cadr item)) name)))
+          (loop for stm in (ensure-list body)
+                for result = (to-ir stm)
+                finally (return result)))))
     (`(if ,pred ,then ,else)
       (run-if-toplevel
-        (let ((if-val (with-not-toplevel (to-ir pred)))
+        (let ((if-val (to-ir pred))
               (then-b (append-block "if.then"))
               (else-b (append-block "if.else"))
               (end-b (append-block "if.end")))
           (cond-br if-val then-b else-b)
           (move-to then-b)
-          (let ((then-val (with-not-toplevel (to-ir then))))
+          (let ((then-val (to-ir then)))
             (br end-b)
             (move-to else-b)
-            (let ((else-val (with-not-toplevel (to-ir else))))
+            (let ((else-val (to-ir else)))
               (br end-b)
               (move-to end-b)
               (incoming :integer (list (cons then-val then-b)
@@ -141,5 +170,5 @@
             do (multiple-value-bind (cons pos)
                    (read-from-string string nil nil :start cur)
                  (setq cur pos)
-                 (time (print (to-ir cons)))))
+                 (print (to-ir cons))))
       (llvm:dump-module *module*))))
