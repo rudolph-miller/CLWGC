@@ -16,7 +16,6 @@
   :components ((:module "t"
                 :components
                 ((:file "init")
-                 (:test-file "ast")
                  (:test-file "parser")
                  (:test-file "env")
                  (:test-file "llvm")

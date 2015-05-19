@@ -25,8 +25,7 @@
   :components ((:module "src"
                 :serial t
                 :components
-                ((:file "ast")
-                 (:file "parser")
+                ((:file "parser")
                  (:file "env")
                  (:file "llvm")
                  (:file "ir")
