@@ -2,8 +2,7 @@
 (defpackage clwgc.parser
   (:use :cl
         :cl-ppcre
-        :esrap
-        :clwgc.ast)
+        :esrap)
   (:shadow :parse)
   (:export :parse))
 (in-package clwgc.parser)
