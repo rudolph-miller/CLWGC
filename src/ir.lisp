@@ -29,6 +29,16 @@
            :else
            :args
            :fn
+           :make-nil
+           :make-t
+           :make-constant
+           :make-variable
+           :make-symbol-value
+           :make-let
+           :make-progn
+           :make-if
+           :make-lambda
+           :make-funcall
            :genir))
 (in-package :clwgc.ir)
 
@@ -112,8 +122,16 @@
         (make-instance '<symbol-value> :var var)
         (error "The variable ~a is undefined." name))))
 
-(defun make-let (vars body)
-  (make-instance '<let> :vars vars :body body))
+(defmacro make-let (pairs body)
+  `(let* ((*current-env* (make-env *current-env*)))
+     (make-instance '<let>
+                    :vars (mapcar #'(lambda (pair)
+                                      (make-variable (car pair) (cdr pair) :integer))
+                                  ,pairs)
+                    :body ,body)))
+
+(defun make-progn (body)
+  (make-instance '<progn> :body body))
 
 (defun make-if (pred then &optional else)
   (make-instance '<if>
@@ -127,6 +145,9 @@
        (setf (slot-value fn 'args) ,args)
        (setf (slot-value fn 'body) ,body))
      fn))
+
+(defun make-funcall (fn args)
+  (make-instance '<funcall> :fn fn :args args))
 
 (defmethod initialize-instance :after ((obj <variable>) &rest initargs)
   (declare (ignore initargs))
@@ -146,7 +167,7 @@
             (genir (cons 'setq rest))
             obj)))
     (`(progn ,@body)
-      (make-instance '<progn> :body (mapcar #'genir (ensure-list body))))
+      (make-progn (mapcar #'genir (ensure-list body))))
     (`(lambda (,@args) ,@body)
       (make-lambda (mapcar #'(lambda (sym)
                                (make-variable (symbol-name sym)))
@@ -160,13 +181,10 @@
                      (mapcar #'genir (ensure-list body))
                      name)))
     (`(let (,@bind-forms) ,@body)
-      (let* ((*current-env* (make-env *current-env*))
-             (vars (loop for list in bind-forms
-                         for name = (symbol-name (car list))
-                         collecting (make-variable name
-                                                   (genir (cadr list))
-                                                   :integer))))
-        (make-let vars (mapcar #'genir (ensure-list body)))))
+      (make-let (mapcar #'(lambda (form)
+                            (cons (symbol-name (car form)) (genir (cadr form))))
+                        bind-forms)
+                (mapcar #'genir (ensure-list body))))
     (`(if ,pred ,then ,else)
       (make-if (genir pred) (genir then) (genir else)))
     (`(if ,pred ,then)
@@ -175,7 +193,7 @@
       (let* ((name (symbol-name fn-s))
              (fn (get-fn name)))
         (if fn
-            (make-instance '<funcall> :fn fn :args (mapcar #'genir args))
+            (make-funcall fn (mapcar #'genir args))
             (error "The function ~a is undefined." name))))
     (atom
      (cond
