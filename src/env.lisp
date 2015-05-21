@@ -7,6 +7,7 @@
            :vars
            :fns
            :parent
+           :layer
            :make-env
            :*current-env*
            :add-var
@@ -24,10 +25,14 @@
         :initform nil)
    (parent :initarg :parent
            :reader parent
-           :initform nil)))
+           :initform nil)
+   (layer :initarg :layer
+          :reader layer)))
 
 (defun make-env (&optional parent)
-  (make-instance '<env> :parent parent))
+  (if parent
+      (make-instance '<env> :parent parent :layer (1+ (layer parent)))
+      (make-instance '<env> :layer 0)))
 
 (defparameter *current-env* nil)
 
@@ -42,9 +47,12 @@
                        :test #'string-equal
                        :key #'car)))
      (if result
-         (cdr result)
+         (values (cdr result) nil (layer env))
          (when (parent env)
-           (,(symbolicate 'get- var-or-fn) name (parent env))))))
+           (multiple-value-bind (result parent-p layer)
+               (,(symbolicate 'get- var-or-fn) name (parent env))
+             (declare (ignore parent-p))
+             (values result t layer))))))
 
 (defun get-var (name &optional (env *current-env*))
   (get-smt var))

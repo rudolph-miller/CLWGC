@@ -11,6 +11,7 @@
            :<t>
            :<constant>
            :<variable>
+           :<update-variable>
            :<symbol-value>
            :<let>
            :<progn>
@@ -21,6 +22,7 @@
            :ptr
            :value
            :name
+           :global
            :var
            :vars
            :body
@@ -33,6 +35,7 @@
            :make-t
            :make-constant
            :make-variable
+           :make-update-variabel
            :make-symbol-value
            :make-let
            :make-progn
@@ -61,6 +64,14 @@
 (defclass <variable> (<expression>)
   ((name :initarg :name
          :reader name)
+   (value :initarg :value
+          :reader value)
+   (global :initarg :global
+           :reader global)))
+
+(defclass <update-variable> (<expression>)
+  ((var :initarg :var
+        :reader var)
    (value :initarg :value
           :reader value)))
 
@@ -110,16 +121,26 @@
 (defun make-constant (value &optional type)
   (make-instance '<constant> :value value :type type))
 
-(defun make-variable (name &optional value type)
+(defun make-variable (name &optional value type global)
   (make-instance '<variable>
                  :name name
                  :value value
-                 :type type))
+                 :type type
+                 :global global))
+
+(defun make-update-variabel (var value)
+  (make-instance '<update-variable>
+                 :var var
+                 :value value))
 
 (defun make-symbol-value (name)
-  (let ((var (get-var name)))
+  (multiple-value-bind (var parent-p layer) (get-var name)
     (if var
-        (make-instance '<symbol-value> :var var)
+        (progn (when (and *inner-lambda*
+                          parent-p
+                          (< layer *current-fn-env-layer*))
+                 (setf (slot-value var 'global) t))
+               (make-instance '<symbol-value> :var var))
         (error "The variable ~a is undefined." name))))
 
 (defmacro make-let (pairs body)
@@ -139,9 +160,15 @@
                  :then then
                  :else (or else (make-nil))))
 
+(defparameter *inner-lambda* nil)
+
+(defparameter *current-fn-env-layer* nil)
+
 (defmacro make-lambda (args body &optional name)
   `(let ((fn (make-instance '<lambda> ,@(when name (list :name name)))))
-     (let ((*current-env* (make-env *current-env*)))
+     (let* ((*current-env* (make-env *current-env*))
+            (*current-fn-env-layer* (layer *current-env*))
+            (*inner-lambda* t))
        (setf (slot-value fn 'args) ,args)
        (setf (slot-value fn 'body) ,body))
      fn))
@@ -162,7 +189,11 @@
   (optima:match cons
     (`(setq ,var ,val ,@rest)
       (let* ((name (symbol-name var))
-             (obj (make-variable name (genir val) :integer)))
+             (var (get-var name))
+             (value (genir val))
+             (obj (if var
+                      (make-update-variabel var value)
+                      (make-variable name value :integer))))
         (if rest
             (genir (cons 'setq rest))
             obj)))

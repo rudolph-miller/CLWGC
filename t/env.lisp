@@ -16,8 +16,16 @@
     (ok env1
         "without :parent.")
 
+    (is (layer env1)
+        0
+        "Layer of root env is 0.")
+
     (ok env2
-        "with :parent."))
+        "with :parent.")
+
+    (is (layer env2)
+        1
+        "Layer is incremented."))
 
   (macrolet ((add-and-get-test (var-or-fn)
                (let ((add-method (symbolicate 'add- var-or-fn))
@@ -33,18 +41,19 @@
                       (is (length (vars env2))
                           1
                           "with *current-env*."))
+
                     (subtest "get"
-                      (is (,get-method "dummy1" env1)
-                          :dummy1
-                          "with specificd env.")
+                      (is-values (,get-method "dummy1" env1)
+                                 (list :dummy1 nil 0)
+                                 "with specificd env.")
 
-                      (is (,get-method "dummy2")
-                          :dummy2
-                          "with *current-env*.")
+                      (is-values (,get-method "dummy2")
+                                 (list :dummy2 nil 1)
+                                 "with *current-env*.")
 
-                      (is (,get-method "dummy1")
-                          :dummy1
-                          "with parent."))))))
+                      (is-values (,get-method "dummy1")
+                                 (list :dummy1 t 0)
+                                 "with parent."))))))
     (subtest "var"
       (add-and-get-test var))
 

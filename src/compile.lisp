@@ -41,9 +41,19 @@
   (constant (exp-type obj) (value obj)))
 
 (defmethod gencode ((obj <variable>))
-  (let ((var (init-var (exp-type obj) (gencode (value obj)) (name obj))))
+  (let* ((type (exp-type obj))
+         (value (gencode (value obj)))
+         (name (name obj))
+         (var (if (global obj)
+                 (init-global-var type value name)
+                 (init-var type value name))))
     (setf (slot-value obj 'ptr) var)
     var))
+
+(defmethod gencode ((obj <update-variable>))
+  (let ((var-ptr (ptr (var obj))))
+    (store-var var-ptr (gencode (value obj)))
+    var-ptr))
 
 (defmethod gencode ((obj <symbol-value>))
   (load-var (ptr (var obj))))

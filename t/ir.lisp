@@ -45,15 +45,19 @@
   (let ((*current-env* (make-env)))
     (is-type (make-variable "var1")
              '<variable>
-             "can make-variable without value nor type.")
+             "can make-variable without value, type nor global.")
 
     (is-type (make-variable "var2" (make-t))
              '<variable>
-             "can make-variable with value without type.")
+             "can make-variable with value without type nor global.")
 
     (is-type (make-variable "var3" (make-t) :bool)
              '<variable>
-             "can make-variable with value and type."))
+             "can make-variable with value and type without global.")
+
+    (is-type (make-variable "var3" (make-t) :bool t)
+             '<variable>
+             "can make-variable with value, type and global."))
 
   (let* ((*current-env* (make-env))
          (var (make-variable "var" (make-t) :bool)))
@@ -69,8 +73,29 @@
         :bool
         "can set type.")
 
+    (is (global var)
+        nil
+        "can set global.")
+
     (ok (get-var "var")
         "can add-var.")))
+
+(subtest "<update-variable>"
+  (let* ((*current-env* (make-env))
+         (var (make-variable "var" (make-t) :bool))
+         (value (make-nil)))
+    (is-type (make-update-variabel var value)
+             '<update-variable>
+             "can make-update-variabel.")
+
+    (let ((update-variable (make-update-variabel var value)))
+      (is-type (var update-variable)
+               '<variable>
+               "can set var.")
+
+      (is-type (value update-variable)
+               '<nil>
+               "can set value."))))
 
 (subtest "<symbol-value>"
   (let ((*current-env* (make-env)))
