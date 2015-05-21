@@ -14,6 +14,8 @@
            :<if>
            :<lambda>
            :<funcall>
+           :*inner-lambda*
+           :*current-fn-env-layer*
            :exp-type
            :ptr
            :value

@@ -69,7 +69,11 @@
 
 (compile-subtest "<lambda>"
   (is-compiled-into "(progn (defun a () 1) (a))"
-                    1))
+                    1)
+
+  (is-compiled-into "(let ((a 0)) (defun fn () (if a (setq a 2) (setq a 1))) (fn) (fn))"
+                    2
+                    "closure."))
 
 (compile-subtest "<funcall>"
   (is-compiled-into "(progn (defun a () 1) (a))"

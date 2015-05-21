@@ -111,7 +111,19 @@
     (let ((symbol-value (make-symbol-value "var")))
       (is-type (var symbol-value)
                '<variable>
-               "can set var."))))
+               "can set var.")
+
+      (is (global (var symbol-value))
+          nil
+          "without captured by closure.")
+
+      (let* ((*inner-lambda* t)
+             (*current-env* (make-env *current-env*))
+             (*current-fn-env-layer* (layer *current-env*)))
+        (let ((var (make-symbol-value "var")))
+          (is (global (var var))
+              t
+              "with captured by closure."))))))
 
 (subtest "<let>"
   (let ((*current-env* (make-env)))

@@ -48,12 +48,12 @@
                  (init-global-var type value name)
                  (init-var type value name))))
     (setf (slot-value obj 'ptr) var)
-    var))
+    (load-var var)))
 
 (defmethod gencode ((obj <update-variable>))
   (let ((var-ptr (ptr (var obj))))
     (store-var var-ptr (gencode (value obj)))
-    var-ptr))
+    (load-var var-ptr)))
 
 (defmethod gencode ((obj <symbol-value>))
   (load-var (ptr (var obj))))
