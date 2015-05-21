@@ -76,6 +76,11 @@
         (incoming :integer (list (cons then-val then-b)
                                  (cons else-val else-b)))))))
 
+(defmethod gencode :around ((obj <lambda>))
+  (let* ((return-position *current-position*))
+    (prog1 (call-next-method)
+      (move-to return-position))))
+
 (defmethod gencode ((obj <lambda>))
   (let* ((name (name obj))
          (arg-t (loop repeat (length (args obj))
