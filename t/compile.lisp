@@ -73,7 +73,13 @@
 
   (is-compiled-into "(let ((a 0)) (defun fn () (if a (setq a 2) (setq a 1))) (fn) (fn))"
                     2
-                    "closure."))
+                    "closure.")
+
+  (let ((curret-pos *current-position*))
+    (gencode (parse "(defun a () 1)"))
+    (is *current-position*
+        curret-pos
+        "can return the last position after compiling.")))
 
 (compile-subtest "<funcall>"
   (is-compiled-into "(progn (defun a () 1) (a))"
