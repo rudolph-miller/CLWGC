@@ -112,6 +112,10 @@
    (args :initarg :args
          :reader args)))
 
+(defparameter *inner-lambda* nil)
+
+(defparameter *current-fn-env-layer* nil)
+
 (defun make-nil ()
   (make-instance '<nil>))
 
@@ -159,10 +163,6 @@
                  :pred pred
                  :then then
                  :else (or else (make-nil))))
-
-(defparameter *inner-lambda* nil)
-
-(defparameter *current-fn-env-layer* nil)
 
 (defmacro make-lambda (args body &optional name)
   `(let ((fn (make-instance '<lambda> ,@(when name (list :name name)))))
