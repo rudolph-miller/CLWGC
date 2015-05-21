@@ -16,10 +16,10 @@
   :components ((:module "t"
                 :components
                 ((:file "init")
-                 (:test-file "parser")
                  (:test-file "env")
                  (:test-file "llvm")
                  (:test-file "ir")
+                 (:test-file "parser")
                  (:test-file "compile")
                  (:test-file "clwgc"))))
 

@@ -25,10 +25,10 @@
   :components ((:module "src"
                 :serial t
                 :components
-                ((:file "parser")
-                 (:file "env")
+                ((:file "env")
                  (:file "llvm")
                  (:file "ir")
+                 (:file "parser")
                  (:file "compile")
                  (:file "clwgc"))))
   :description "WIP"

@@ -4,6 +4,7 @@
         :clwgc.env
         :clwgc.llvm
         :clwgc.ir
+        :clwgc.parser
         :clwgc.compile))
 (in-package :clwgc)
 

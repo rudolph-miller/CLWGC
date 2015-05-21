@@ -1,11 +1,7 @@
 (in-package :cl-user)
 (defpackage clwgc.ir
   (:use :cl
-        :clwgc.env
-        :named-readtables
-        :fare-quasiquote)
-  (:import-from :alexandria
-                :ensure-list)
+        :clwgc.env)
   (:export :<expression>
            :<nil>
            :<t>
@@ -41,11 +37,8 @@
            :make-progn
            :make-if
            :make-lambda
-           :make-funcall
-           :genir))
+           :make-funcall))
 (in-package :clwgc.ir)
-
-(in-readtable :fare-quasiquote)
 
 (defclass <expression> ()
   ((type :initarg :type
@@ -185,54 +178,3 @@
   (when (name obj)
     (add-fn (name obj) obj)))
 
-(defun genir (cons)
-  (optima:match cons
-    (`(setq ,var ,val ,@rest)
-      (let* ((name (symbol-name var))
-             (var (get-var name))
-             (value (genir val))
-             (obj (if var
-                      (make-update-variabel var value)
-                      (make-variable name value :integer))))
-        (if rest
-            (genir (cons 'setq rest))
-            obj)))
-    (`(progn ,@body)
-      (make-progn (mapcar #'genir (ensure-list body))))
-    (`(lambda (,@args) ,@body)
-      (make-lambda (mapcar #'(lambda (sym)
-                               (make-variable (symbol-name sym)))
-                           args)
-                   (mapcar #'genir (ensure-list body))))
-    (`(defun ,name-s (,@args) ,@body)
-      (let ((name (symbol-name name-s)))
-        (make-lambda (mapcar #'(lambda (sym)
-                                 (make-variable (symbol-name sym)))
-                             args)
-                     (mapcar #'genir (ensure-list body))
-                     name)))
-    (`(let (,@bind-forms) ,@body)
-      (make-let (mapcar #'(lambda (form)
-                            (cons (symbol-name (car form)) (genir (cadr form))))
-                        bind-forms)
-                (mapcar #'genir (ensure-list body))))
-    (`(if ,pred ,then ,else)
-      (make-if (genir pred) (genir then) (genir else)))
-    (`(if ,pred ,then)
-      (make-if (genir pred) (genir then)))
-    (`(,fn-s ,@args)
-      (let* ((name (symbol-name fn-s))
-             (fn (get-fn name)))
-        (if fn
-            (make-funcall fn (mapcar #'genir args))
-            (error "The function ~a is undefined." name))))
-    (atom
-     (cond
-       ((symbolp atom)
-        (let ((name (symbol-name atom)))
-          (cond
-            ((string-equal name "t") (make-t))
-            ((string-equal name "nil") (make-nil))
-            (t (make-symbol-value name)))))
-       ((integerp atom) (make-constant atom :integer))
-       (t (error "Not supported: ~a." atom))))))
