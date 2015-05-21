@@ -6,6 +6,7 @@
            :*ee*
            :*fpm*
            :*current-fn*
+           :*current-position*
            :*cons*
            :with-module
            :get-type
@@ -20,6 +21,7 @@
            :store-var
            :load-var
            :init-var
+           :init-global-var
            :br
            :cond-br
            :call
@@ -40,6 +42,8 @@
 (defparameter *fpm* nil)
 
 (defparameter *current-fn* nil)
+
+(defparameter *current-position* nil)
 
 (defparameter *cons* nil)
 
@@ -80,6 +84,7 @@
   (llvm:append-basic-block fn name))
 
 (defun move-to (block)
+  (setq *current-position* block)
   (llvm:position-builder *builder* block))
 
 (defun add-function (name arg-t ret-t)
@@ -125,6 +130,11 @@
     (when val
       (store-var var val))
     var))
+
+(defun init-global-var (type &optional val (name "tmp"))
+  (let ((global (llvm:add-global *module* (get-type type) name)))
+    (when (llvm:set-initializer global val))
+    global))
 
 (defun br (dest)
   (llvm:build-br *builder* dest))

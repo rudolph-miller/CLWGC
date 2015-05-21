@@ -137,6 +137,19 @@
           1
           "can alloca and store."))))
 
+(subtest "init-global-var"
+  (with-module
+    (let ((main (add-function-and-move-into "main" nil :integer))
+          (global (init-global-var :integer (constant :integer 1))))
+      (ret (load-var global))
+      (is (llvm:constantp global)
+          t
+          "can create global variable.")
+
+      (is (run main)
+          1
+          "can set initial value."))))
+
 (subtest "br"
   (with-module
     (let* ((main (add-function-and-move-into "main" nil :integer))
