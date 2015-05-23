@@ -10,6 +10,7 @@
            :*cons*
            :with-module
            :get-type
+           :get-obj-type
            :append-block
            :move-to
            :add-function
@@ -58,27 +59,38 @@
          (:cons *cons*)
          (:pointer (llvm:pointer-type arg))))))
 
-(defun declare-cons ()
-  (let ((ty (llvm:struct-create-named (llvm:global-context) "cons")))
-    (llvm:struct-set-body ty (list (get-type :integer) (get-type :integer)))
-    ty))
+(let ((obj)
+      (obj.integer)
+      (obj.cons))
 
-(defmacro with-cons-declared (&body body)
-  `(let ((*cons* (declare-cons)))
-     ,@body))
+  (defun declare-cons ()
+    (setq *cons* (llvm:struct-create-named (llvm:global-context) "cons"))
+    (setq obj (llvm:struct-create-named (llvm:global-context) "obj"))
+    (setq obj.integer (llvm:struct-create-named (llvm:global-context) "obj.integer"))
+    (setq obj.cons (llvm:struct-create-named (llvm:global-context) "obj.cons"))
+    (llvm:struct-set-body *cons* (list (get-type :integer) (get-type :integer)))
+    (llvm:struct-set-body obj (list (get-type :integer)))
+    (llvm:struct-set-body obj.integer (list (get-type :integer)))
+    (llvm:struct-set-body obj.cons (list *cons*)))
+
+  (defun get-obj-type (&optional type)
+    (case type
+      (:integer obj.integer)
+      (:cons :obj.cons)
+      (t obj))))
 
 (defmacro with-module (&body body)
   `(llvm:with-objects ((*builder* llvm:builder)
                        (*module* llvm:module "CLWGC")
                        (*ee* llvm:execution-engine *module*)
                        (*fpm* llvm:function-pass-manager *module*))
-     (with-cons-declared
-       (llvm:add-target-data (llvm:target-data *ee*) *fpm*)
-       (llvm:add-promote-memory-to-register-pass *fpm*)
-       (llvm:add-reassociate-pass *fpm*)
-       (llvm:add-gvn-pass *fpm*)
-       (llvm:initialize-function-pass-manager *fpm*)
-       ,@body)))
+     (declare-cons)
+     (llvm:add-target-data (llvm:target-data *ee*) *fpm*)
+     (llvm:add-promote-memory-to-register-pass *fpm*)
+     (llvm:add-reassociate-pass *fpm*)
+     (llvm:add-gvn-pass *fpm*)
+     (llvm:initialize-function-pass-manager *fpm*)
+     ,@body))
 
 (defun append-block (name &optional (fn *current-fn*))
   (llvm:append-basic-block fn name))
