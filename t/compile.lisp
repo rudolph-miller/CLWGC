@@ -79,7 +79,7 @@
     (gencode (parse "(defun a () 1)"))
     (is *current-position*
         curret-pos
-        "can return the last position after compiling.")))
+        "can return to the last position after compiled.")))
 
 (compile-subtest "<funcall>"
   (is-compiled-into "(progn (defun a () 1) (a))"
