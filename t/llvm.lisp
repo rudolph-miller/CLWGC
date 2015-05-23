@@ -66,7 +66,15 @@
 
 (subtest "move-to"
   (with-module
-    (skip 1 "can not get current block.")))
+    (add-function-and-move-into "main" nil nil)
+    (let ((current-pos *current-position*)
+          (block (append-block "next")))
+      (move-to block)
+      (skip 1 "can not get current block.")
+
+      (ok (not (cffi:pointer-eq current-pos
+                                *current-position*))
+        "can set *current-position*."))))
 
 (subtest "add-function"
   (with-module
