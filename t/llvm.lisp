@@ -202,7 +202,14 @@
       (ret (load-var i))
       (is (run main)
           1
-          "can alloca and store."))))
+          "can alloca and store."))
+
+    (let ((main (add-function-and-move-into "main" nil :integer))
+          (i (init-var :integer 1)))
+      (ret (load-var i))
+      (is (run main)
+          1
+          "without (constant ...)."))))
 
 (subtest "init-global-var"
   (with-module

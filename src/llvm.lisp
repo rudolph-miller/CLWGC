@@ -185,7 +185,9 @@
 (defun init-var (type &optional val (name *tmp-name*))
   (let ((var (alloca type name)))
     (when val
-      (store-var var val))
+      (if (cffi:pointerp val)
+          (store-var var val)
+          (store-var var (constant type val))))
     var))
 
 (defun init-global-var (type &optional val (name *tmp-name*))
