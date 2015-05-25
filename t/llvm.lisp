@@ -33,6 +33,11 @@
     (ok *cons*
         "*cons* is bound.")
 
+    (skip 1 "with-obj-declared.")
+
+    (ok clwgc.llvm::*va-list*
+        "*va-list* is bound.")
+
     (ok (not (cffi:null-pointer-p (llvm:named-function *module* "llvm.va_start")))
         "llvm.va_start is declared.")
 
