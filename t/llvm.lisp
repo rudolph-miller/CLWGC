@@ -54,7 +54,41 @@
 
     (is-ptr (get-type '(:pointer :cons))
             (llvm:pointer-type *cons*)
-            "with list.")))
+            "with list.")
+
+    (is-ptr (get-type :obj)
+            clwgc.llvm::*obj*
+            "with :obj.")
+
+    (is-ptr (get-type '(:obj :integer))
+            clwgc.llvm::*obj.integer*
+            "with (:obj :integer).")
+
+    (is-ptr (get-type '(:obj :cons))
+            clwgc.llvm::*obj.cons*
+            "with (:obj :cons).")))
+
+(subtest "get-type-of"
+  (with-module
+    (is (get-type-of (constant :integer 1))
+        :integer
+        ":integer.")
+
+    (is (get-type-of (constant :bool 1))
+        :bool
+        ":bool.")
+
+    (is (get-type-of (init-var :integer (constant :integer 1)))
+        '(:pointer :integer)
+        "with (:pointer :integer).")
+
+    (is (get-type-of (init-var :bool (constant :bool 1)))
+        '(:pointer :bool)
+        "with (:pointer :bool).")
+
+    (skip 1 ":obj.")
+    (skip 1 "(:obj :integer).")
+    (skip 1 "(:obj :bool).")))
 
 (subtest "append-block"
   (with-module
@@ -242,6 +276,13 @@
           2
           "can add-incoming."))))
 
+(subtest "bit-cast"
+  (with-module
+    (add-function-and-move-into "main" nil :integer)
+    (let ((i (init-var :bool (constant :bool 1))))
+      (is (get-type-of (bit-cast i '(:pointer :integer)))
+          '(:pointer :integer)
+          "can bet-cast."))))
 
 (subtest "run-pass"
   (with-module

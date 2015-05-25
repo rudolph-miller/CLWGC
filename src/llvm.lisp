@@ -10,7 +10,7 @@
            :*cons*
            :with-module
            :get-type
-           :get-obj-type
+           :get-type-of
            :append-block
            :move-to
            :add-function
@@ -27,6 +27,7 @@
            :cond-br
            :call
            :incoming
+           :bit-cast
            :run-pass
            :run
            :make-cons
@@ -48,49 +49,85 @@
 
 (defparameter *cons* nil)
 
+(defparameter *obj* nil)
+
+(defparameter *obj.integer* nil)
+
+(defparameter *obj.cons* nil)
+
+(defparameter *va-list* nil)
+
 (defun get-type (key &optional arg)
   (cond
     ((null key) (llvm:void-type))
-    ((consp key) (get-type (car key) (get-type (cadr key))))
+    ((consp key)
+     (ecase (car key)
+       (:pointer (get-type (car key) (get-type (cadr key))))
+       (:obj (get-type (car key) (cadr key)))))
     ((cffi:pointerp key) key)
     (t (ecase key
          (:integer (llvm:int64-type))
          (:bool (llvm:int1-type))
          (:cons *cons*)
-         (:pointer (llvm:pointer-type arg))))))
+         (:va-list *va-list*)
+         (:pointer (llvm:pointer-type arg))
+         (:obj (if arg
+                   (ecase arg
+                     (:integer *obj.integer*)
+                     (:cons *obj.cons*))
+                   *obj*))))))
 
-(let ((obj)
-      (obj.integer)
-      (obj.cons))
+(defun get-type-of (val)
+  (find (llvm:type-of val)
+        (list :integer
+              :bool
+              :cons
+              :va-list
+              :obj
+              '(:pointer :integer)
+              '(:pointer :bool)
+              '(:pointer :cons)
+              '(:pointer :va-list)
+              '(:obj :integer)
+              '(:obj :cons))
+        :test #'cffi:pointer-eq
+        :key #'(lambda (item)
+                 (get-type item))))
 
-  (defun declare-cons ()
-    (setq *cons* (llvm:struct-create-named (llvm:global-context) "cons"))
-    (setq obj (llvm:struct-create-named (llvm:global-context) "obj"))
-    (setq obj.integer (llvm:struct-create-named (llvm:global-context) "obj.integer"))
-    (setq obj.cons (llvm:struct-create-named (llvm:global-context) "obj.cons"))
-    (llvm:struct-set-body *cons* (list (get-type :integer) (get-type :integer)))
-    (llvm:struct-set-body obj (list (get-type :integer)))
-    (llvm:struct-set-body obj.integer (list (get-type :integer)))
-    (llvm:struct-set-body obj.cons (list *cons*)))
+(defmacro with-obj-declared (&body body)
+  `(let ((*cons* (llvm:struct-create-named (llvm:global-context) "cons"))
+         (*obj* (llvm:struct-create-named (llvm:global-context) "obj"))
+         (*obj.integer* (llvm:struct-create-named (llvm:global-context) "obj.integer"))
+         (*obj.cons* (llvm:struct-create-named (llvm:global-context) "obj.cons")))
+     ;; cons:: obj * obj
+     (llvm:struct-set-body *cons* (list (get-type :integer) (get-type :integer)))
+     ;; obj:: tag:int * inner:int
+     (llvm:struct-set-body *obj* (list (get-type :integer) (get-type :integer)))
+     (llvm:struct-set-body *obj.integer* (list (get-type :integer)))
+     (llvm:struct-set-body *obj.cons* (list *cons*))
+     ,@body))
 
-  (defun get-obj-type (&optional type)
-    (case type
-      (:integer obj.integer)
-      (:cons :obj.cons)
-      (t obj))))
+(defmacro with-va-list-declared (&body body)
+  `(let ((*va-list* (llvm:struct-create-named (llvm:global-context) "va_list")))
+     (llvm:struct-set-body *va-list* (list (llvm:int32-type)
+                                           (llvm:int32-type)
+                                           (get-type (list :pointer (llvm:int8-type)))
+                                           (get-type (list :pointer (llvm:int8-type)))))
+     ,@body))
 
 (defmacro with-module (&body body)
   `(llvm:with-objects ((*builder* llvm:builder)
                        (*module* llvm:module "CLWGC")
                        (*ee* llvm:execution-engine *module*)
                        (*fpm* llvm:function-pass-manager *module*))
-     (declare-cons)
-     (llvm:add-target-data (llvm:target-data *ee*) *fpm*)
-     (llvm:add-promote-memory-to-register-pass *fpm*)
-     (llvm:add-reassociate-pass *fpm*)
-     (llvm:add-gvn-pass *fpm*)
-     (llvm:initialize-function-pass-manager *fpm*)
-     ,@body))
+     (with-obj-declared
+       (with-va-list-declared
+         (llvm:add-target-data (llvm:target-data *ee*) *fpm*)
+         (llvm:add-promote-memory-to-register-pass *fpm*)
+         (llvm:add-reassociate-pass *fpm*)
+         (llvm:add-gvn-pass *fpm*)
+         (llvm:initialize-function-pass-manager *fpm*)
+         ,@body))))
 
 (defun append-block (name &optional (fn *current-fn*))
   (llvm:append-basic-block fn name))
@@ -99,7 +136,7 @@
   (setq *current-position* block)
   (llvm:position-builder *builder* block))
 
-(defun add-function (name arg-t ret-t)
+(defun add-function (name arg-t ret-t &key var-arg-p)
   (let ((arr (make-array (length arg-t))))
     (when arg-t
       (loop for i from 0
@@ -107,10 +144,10 @@
             do (setf (aref arr i) (get-type item))))
     (setq *current-fn*
           (llvm:add-function *module* name
-                             (llvm:function-type (get-type ret-t) arr)))))
+                             (llvm:function-type (get-type ret-t) arr :var-arg-p var-arg-p)))))
 
-(defun add-function-and-move-into (name arg-t ret-t)
-  (let ((fn (add-function name arg-t ret-t)))
+(defun add-function-and-move-into (name arg-t ret-t &key var-arg-p)
+  (let ((fn (add-function name arg-t ret-t :var-arg-p var-arg-p)))
     (setq *current-fn* fn)
     (move-to (append-block "entry"))
     fn))
@@ -166,6 +203,9 @@
   (let ((result (llvm:build-phi *builder* (get-type type) "result")))
     (llvm:add-incoming result (mapcar #'car pairs) (mapcar #'cdr pairs))
     result))
+
+(defun bit-cast (val dest-ty &optional (name "tmp"))
+  (llvm:build-bit-cast *builder* val (get-type dest-ty) name))
 
 (defun run-pass (&optional (fn *current-fn*))
   (when (stringp fn)
