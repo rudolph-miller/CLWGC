@@ -31,7 +31,13 @@
         "*fpm* is bound.")
 
     (ok *cons*
-        "*cons* is bound.")))
+        "*cons* is bound.")
+
+    (ok (not (cffi:null-pointer-p (llvm:named-function *module* "llvm.va_start")))
+        "llvm.va_start is declared.")
+
+    (ok (not (cffi:null-pointer-p (llvm:named-function *module* "llvm.va_end")))
+        "llvm.va_end is declared.")))
 
 
 (subtest "get-type"
