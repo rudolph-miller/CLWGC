@@ -28,12 +28,15 @@
            :call
            :incoming
            :bit-cast
+           :va-arg
            :run-pass
            :run
            :make-cons
            :get-car
            :get-cdr))
 (in-package :clwgc.llvm)
+
+(defparameter *tmp-name* "")
 
 (defparameter *builder* nil)
 
@@ -66,7 +69,8 @@
        (:obj (get-type (car key) (cadr key)))))
     ((cffi:pointerp key) key)
     (t (ecase key
-         (:integer (llvm:int64-type))
+         (:integer (llvm:int32-type))
+         (:int8 (llvm:int8-type))
          (:bool (llvm:int1-type))
          (:cons *cons*)
          (:va-list *va-list*)
@@ -80,6 +84,7 @@
 (defun get-type-of (val)
   (find (llvm:type-of val)
         (list :integer
+              :int8
               :bool
               :cons
               :va-list
@@ -113,6 +118,8 @@
                                            (llvm:int32-type)
                                            (get-type (list :pointer (llvm:int8-type)))
                                            (get-type (list :pointer (llvm:int8-type)))))
+     (add-function "llvm.va_start" (list (list :pointer (llvm:int8-type))) nil)
+     (add-function "llvm.va_end" (list (list :pointer (llvm:int8-type))) nil)
      ,@body))
 
 (defmacro with-module (&body body)
@@ -157,7 +164,7 @@
     (setq fn (llvm:named-function *module* fn)))
   (llvm:params fn))
 
-(defun alloca (type &optional (name "tmp"))
+(defun alloca (type &optional (name *tmp-name*))
   (llvm:build-alloca *builder* (get-type type) name))
 
 (defun ret (val)
@@ -166,21 +173,22 @@
 (defun constant (type value)
   (ecase type
     (:integer (llvm:const-int (get-type type) value))
+    (:int8 (llvm:const-int (get-type type) value))
     (:bool (llvm:const-int (get-type type) value))))
 
 (defun store-var (var val)
   (llvm:build-store *builder* val var))
 
-(defun load-var (var &optional (name "tmp"))
+(defun load-var (var &optional (name *tmp-name*))
   (llvm:build-load *builder* var name))
 
-(defun init-var (type &optional val (name "tmp"))
+(defun init-var (type &optional val (name *tmp-name*))
   (let ((var (alloca type name)))
     (when val
       (store-var var val))
     var))
 
-(defun init-global-var (type &optional val (name "tmp"))
+(defun init-global-var (type &optional val (name *tmp-name*))
   (let ((global (llvm:add-global *module* (get-type type) name)))
     (when (llvm:set-initializer global val))
     global))
@@ -194,7 +202,7 @@
                    (llvm:build-i-cmp *builder* :> if (constant :integer 0) "comp"))))
     (llvm:build-cond-br *builder* comp then else)))
 
-(defun call (&optional (fn *current-fn*) args (name "tmp"))
+(defun call (&optional (fn *current-fn*) args (name *tmp-name*))
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
   (llvm:build-call *builder* fn args name))
@@ -204,8 +212,11 @@
     (llvm:add-incoming result (mapcar #'car pairs) (mapcar #'cdr pairs))
     result))
 
-(defun bit-cast (val dest-ty &optional (name "tmp"))
+(defun bit-cast (val dest-ty &optional (name *tmp-name*))
   (llvm:build-bit-cast *builder* val (get-type dest-ty) name))
+
+(defun va-arg (list ty &optional (name *tmp-name*))
+  (llvm:build-va-arg *builder* list ty name))
 
 (defun run-pass (&optional (fn *current-fn*))
   (when (stringp fn)
@@ -228,16 +239,16 @@
     (setf (get-cdr cons) cdr)
     cons))
 
-(defun get-car (cons &optional (name "tmp"))
+(defun get-car (cons &optional (name *tmp-name*))
   (load-var (llvm:build-struct-gep *builder* cons 0 name)))
 
-(defun get-cdr (cons &optional (name "tmp"))
+(defun get-cdr (cons &optional (name *tmp-name*))
   (load-var (llvm:build-struct-gep *builder* cons 1 name)))
 
 (defun (setf get-car) (val cons)
-  (let ((car (llvm:build-struct-gep *builder* cons 0 "tmp")))
+  (let ((car (llvm:build-struct-gep *builder* cons 0 *tmp-name*)))
     (store-var car val)))
 
 (defun (setf get-cdr) (val cons)
-  (let ((cdr (llvm:build-struct-gep *builder* cons 1 "tmp")))
+  (let ((cdr (llvm:build-struct-gep *builder* cons 1 *tmp-name*)))
     (store-var cdr val)))

@@ -37,8 +37,12 @@
 (subtest "get-type"
   (with-module
     (is-ptr (get-type :integer)
-            (llvm:int64-type)
+            (llvm:int32-type)
             ":integer.")
+
+    (is-ptr (get-type :int8)
+            (llvm:int8-type)
+            ":int8.")
 
     (is-ptr (get-type :bool)
             (llvm:int1-type)
@@ -73,6 +77,10 @@
     (is (get-type-of (constant :integer 1))
         :integer
         ":integer.")
+
+    (is (get-type-of (constant :int8 1))
+        :int8
+        ":int8.")
 
     (is (get-type-of (constant :bool 1))
         :bool
@@ -150,6 +158,12 @@
   (with-module
     (let ((main (add-function-and-move-into "main" nil :integer)))
       (ret (constant :integer 1))
+      (is (run main)
+          1
+          ":integer."))
+
+    (let ((main (add-function-and-move-into "main" nil :integer)))
+      (ret (constant :int8 1))
       (is (run main)
           1
           ":integer."))
@@ -283,6 +297,10 @@
       (is (get-type-of (bit-cast i '(:pointer :integer)))
           '(:pointer :integer)
           "can bet-cast."))))
+
+
+(subtest "va-arg"
+  (skip 1 "not tested yet."))
 
 (subtest "run-pass"
   (with-module
