@@ -10,6 +10,8 @@
            :layer
            :make-env
            :*current-env*
+           :*global-env*
+           :with-global-env
            :add-var
            :add-fn
            :get-var
@@ -35,6 +37,13 @@
       (make-instance '<env> :layer 0)))
 
 (defparameter *current-env* nil)
+
+(defparameter *global-env* nil)
+
+(defmacro with-global-env (&body body)
+  `(let* ((*global-env* (make-env))
+          (*current-env* *global-env*))
+     ,@body))
 
 (defun add-var (name value &optional (env *current-env*))
   (push (cons name value) (vars env)))

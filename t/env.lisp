@@ -60,4 +60,12 @@
     (subtest "fn"
       (add-and-get-test fn))))
 
+(subtest "with-global-env"
+  (with-global-env
+    (ok *global-env*
+        "can bind *global-env*.")
+
+    (ok *current-env*
+        "can bind *current-env*.")))
+
 (finalize)

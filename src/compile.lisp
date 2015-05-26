@@ -20,7 +20,8 @@
          (if (and *toplevel-p* (cffi:pointerp ,result))
              (progn (ret ,result)
                     (run ,run))
-             ,result)))))
+             (progn (llvm:delete-function ,run)
+                    ,result))))))
 
 (defgeneric gencode (obj))
 

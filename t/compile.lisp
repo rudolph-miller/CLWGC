@@ -14,7 +14,7 @@
 (defmacro compile-subtest (dest &body body)
   `(subtest ,dest
      (with-module
-       (let ((*current-env* (make-env)))
+       (with-global-env
          ,@body))))
 
 (defmacro is-compiled-into (target expect &optional comment)

@@ -29,6 +29,7 @@
                  (:file "llvm")
                  (:file "ir")
                  (:file "parser")
+                 (:file "stdlib")
                  (:file "compile")
                  (:file "clwgc"))))
   :description "WIP"

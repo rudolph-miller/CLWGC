@@ -8,14 +8,10 @@
         :clwgc.parser))
 (in-package :clwgc-test.parser)
 
-(defmacro with-env (&body body)
-  `(let ((*current-env* (make-env)))
-     ,@body))
-
 (plan nil)
 
 (subtest "setq"
-  (with-env
+  (with-global-env
     (subtest "<variable>"
       (is-type (parse "(setq var 1)")
                '<variable>
@@ -44,7 +40,7 @@
                  "can set value.")))))
 
 (subtest "progn"
-  (with-env
+  (with-global-env
     (is-type (parse "(progn 1 2)")
              '<progn>
              "can generate.")
@@ -55,7 +51,7 @@
                "can set body."))))
 
 (subtest "lambda"
-  (with-env
+  (with-global-env
     (is-type (parse "(lambda (a) a)")
              '<lambda>
              "can generate.")
@@ -71,10 +67,14 @@
 
       (is-type (car (body lambda))
                '<symbol-value>
-               "can set body."))))
+               "can set body.")
+
+      (is (global lambda)
+          nil
+          "can set :global nil."))))
 
 (subtest "defun"
-  (with-env
+  (with-global-env
     (is-type (parse "(defun fn (a) a)")
              '<lambda>
              "can generate.")
@@ -94,10 +94,14 @@
 
       (is-type (car (body fn))
                '<symbol-value>
-               "can set body."))))
+               "can set body.")
+
+      (is (global fn)
+          t
+          "can set :global t."))))
 
 (subtest "let"
-  (with-env
+  (with-global-env
     (is-type (parse "(let ((a 1)) a)")
              '<let>
              "can generate.")
@@ -112,7 +116,7 @@
                "can set body."))))
 
 (subtest "if"
-  (with-env
+  (with-global-env
     (macrolet ((if-test (target pred-t then-t else-t)
                  (let ((if (gensym "if")))
                    `(progn
@@ -140,7 +144,7 @@
         (if-test "(if t 1)" <t> <constant> <nil>)))))
 
 (subtest "funcall"
-  (with-env
+  (with-global-env
     (is-error (parse "(fn 1)")
               'simple-error
               "can raise the error with an undefined function.")
@@ -161,7 +165,7 @@
                "can set args."))))
 
 (subtest "atom"
-  (with-env
+  (with-global-env
     (subtest "t"
       (is-type (parse "t")
                '<t>

@@ -20,6 +20,7 @@
                  (:test-file "llvm")
                  (:test-file "ir")
                  (:test-file "parser")
+                 (:test-file "stdlib")
                  (:test-file "compile")
                  (:test-file "clwgc"))))
 

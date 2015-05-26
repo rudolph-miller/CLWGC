@@ -99,7 +99,10 @@
    (args :initarg :args
          :reader args)
    (body :initarg :body
-         :reader body)))
+         :reader body)
+   (global :initarg :global
+           :reader global
+           :initform nil)))
 
 (defclass <funcall> (<expression>)
   ((fn :initarg :fn
@@ -159,8 +162,10 @@
                  :then then
                  :else (or else (make-nil))))
 
-(defmacro make-lambda (args body &optional name)
-  `(let ((fn (make-instance '<lambda> ,@(when name (list :name name)))))
+(defmacro make-lambda (args body &optional name global)
+  `(let ((fn (make-instance '<lambda>
+                            ,@(when name (list :name name))
+                            ,@(when global (list :global global)))))
      (let* ((*current-env* (make-env *current-env*))
             (*current-fn-env-layer* (layer *current-env*))
             (*inner-lambda* t))
@@ -178,5 +183,8 @@
 (defmethod initialize-instance :after ((obj <lambda>) &rest initargs)
   (declare (ignore initargs))
   (when (name obj)
-    (add-fn (name obj) obj)))
+    (if (and (slot-boundp obj 'global)
+             (global obj))
+        (add-fn (name obj) obj *global-env*)
+        (add-fn (name obj) obj))))
 

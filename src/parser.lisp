@@ -38,7 +38,8 @@
                                  (make-variable (symbol-name sym)))
                              args)
                      (mapcar #'genir (ensure-list body))
-                     name)))
+                     name
+                     t)))
     (`(let (,@bind-forms) ,@body)
       (make-let (mapcar #'(lambda (form)
                             (cons (symbol-name (car form)) (genir (cadr form))))
