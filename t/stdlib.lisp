@@ -11,4 +11,17 @@
 
 (plan nil)
 
+(defmacro stdlib-subtest (name &body body)
+  `(subtest ,name
+     (with-stdlib
+       ,@body)))
+
+(stdlib-subtest "+")
+
+(stdlib-subtest "-")
+
+(stdlib-subtest "*")
+
+(stdlib-subtest "=")
+
 (finalize)
