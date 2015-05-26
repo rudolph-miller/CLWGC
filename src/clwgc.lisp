@@ -12,15 +12,13 @@
 (defparameter *debug* nil)
 
 (defun rep (string)
-  (with-module
-    (with-global-env
-      (add-someops)
-      (loop with len = (length string)
-            with cur = 0
-            while (< cur len)
-            do (multiple-value-bind (cons pos)
-                   (read-from-string string nil nil :start cur)
-                 (setq cur pos)
-                 (print (gencode (genir cons))))))
-    (when *debug*
-      (print (llvm:print-module-to-string *module*)))))
+  (with-stdlib
+    (loop with len = (length string)
+          with cur = 0
+          while (< cur len)
+          do (multiple-value-bind (cons pos)
+                 (read-from-string string nil nil :start cur)
+               (setq cur pos)
+               (print (gencode (genir cons))))))
+  (when *debug*
+    (print (llvm:print-module-to-string *module*))))
