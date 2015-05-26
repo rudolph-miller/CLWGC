@@ -25,6 +25,7 @@
            :init-global-var
            :br
            :cond-br
+           :build-if
            :call
            :incoming
            :bit-cast
@@ -33,7 +34,9 @@
            :run
            :make-cons
            :get-car
-           :get-cdr))
+           :get-cdr
+           :obj-tag
+           :obj-value))
 (in-package :clwgc.llvm)
 
 (defparameter *tmp-name* "")
@@ -54,10 +57,6 @@
 
 (defparameter *obj* nil)
 
-(defparameter *obj.integer* nil)
-
-(defparameter *obj.cons* nil)
-
 (defparameter *va-list* nil)
 
 (defun get-type (key &optional arg)
@@ -75,11 +74,7 @@
          (:cons *cons*)
          (:va-list *va-list*)
          (:pointer (llvm:pointer-type arg))
-         (:obj (if arg
-                   (ecase arg
-                     (:integer *obj.integer*)
-                     (:cons *obj.cons*))
-                   *obj*))))))
+         (:obj *obj*)))))
 
 (defun get-type-of (val)
   (find (llvm:type-of val)
@@ -92,25 +87,28 @@
               '(:pointer :integer)
               '(:pointer :bool)
               '(:pointer :cons)
-              '(:pointer :va-list)
-              '(:obj :integer)
-              '(:obj :cons))
+              '(:pointer :va-list))
         :test #'cffi:pointer-eq
         :key #'(lambda (item)
                  (get-type item))))
 
 (defmacro with-obj-declared (&body body)
   `(let ((*cons* (llvm:struct-create-named (llvm:global-context) "cons"))
-         (*obj* (llvm:struct-create-named (llvm:global-context) "obj"))
-         (*obj.integer* (llvm:struct-create-named (llvm:global-context) "obj.integer"))
-         (*obj.cons* (llvm:struct-create-named (llvm:global-context) "obj.cons")))
+         (*obj* (llvm:struct-create-named (llvm:global-context) "obj")))
      ;; cons:: obj * obj
      (llvm:struct-set-body *cons* (list (get-type :integer) (get-type :integer)))
      ;; obj:: tag:int * inner:int
      (llvm:struct-set-body *obj* (list (get-type :integer) (get-type :integer)))
-     (llvm:struct-set-body *obj.integer* (list (get-type :integer)))
-     (llvm:struct-set-body *obj.cons* (list *cons*))
      ,@body))
+
+(let ((list '((:bool . 0)
+              (:integer . 1)
+              (:cons . 2))))
+  (defun tag->num (tag)
+    (cdr (find tag list :key #'car)))
+
+  (defun num->tag (num)
+    (car (find num list :key #'cdr))))
 
 (defmacro with-va-list-declared (&body body)
   `(let ((*va-list* (llvm:struct-create-named (llvm:global-context) "va_list")))
@@ -174,7 +172,9 @@
   (ecase type
     (:integer (llvm:const-int (get-type type) value))
     (:int8 (llvm:const-int (get-type type) value))
-    (:bool (llvm:const-int (get-type type) value))))
+    (:bool (llvm:const-int (get-type type) (if (typep value 'boolean)
+                                               (if value 1 0)
+                                               value)))))
 
 (defun store-var (var val)
   (llvm:build-store *builder* val var))
@@ -204,13 +204,29 @@
                    (llvm:build-i-cmp *builder* :> if (constant :integer 0) "comp"))))
     (llvm:build-cond-br *builder* comp then else)))
 
+(defmacro build-if (pred then else)
+  `(let ((if-val ,pred)
+         (then-b (append-block "if.then"))
+         (else-b (append-block "if.else"))
+         (end-b (append-block "if.end")))
+     (cond-br if-val then-b else-b)
+     (move-to then-b)
+     (let ((then-val ,then))
+       (br end-b)
+       (move-to else-b)
+       (let ((else-val ,else))
+         (br end-b)
+         (move-to end-b)
+         (incoming :integer (list (cons then-val then-b)
+                                  (cons else-val else-b)))))))
+
 (defun call (&optional (fn *current-fn*) args (name *tmp-name*))
   (when (stringp fn)
     (setq fn (llvm:named-function *module* fn)))
   (llvm:build-call *builder* fn args name))
 
 (defun incoming (type pairs)
-  (let ((result (llvm:build-phi *builder* (get-type type) "result")))
+  (let ((result (llvm:build-phi *builder* (get-type type) *tmp-name*)))
     (llvm:add-incoming result (mapcar #'car pairs) (mapcar #'cdr pairs))
     result))
 
@@ -254,3 +270,29 @@
 (defun (setf get-cdr) (val cons)
   (let ((cdr (llvm:build-struct-gep *builder* cons 1 *tmp-name*)))
     (store-var cdr val)))
+
+(defun obj-tag (obj &optional (name *tmp-name*))
+  (load-var (llvm:build-struct-gep *builder* obj 0 name)))
+
+(defun (setf obj-tag) (int obj)
+  (store-var (llvm:build-struct-gep *builder* obj 0 *tmp-name*)
+             (constant :integer int)))
+
+(defun obj-value (obj &optional (name *tmp-name*))
+  (load-var (llvm:build-struct-gep *builder* obj 1 name)))
+
+(defun (setf obj-value) (value obj)
+  (store-var (llvm:build-struct-gep *builder* obj 1 *tmp-name*)
+             value))
+
+(defun make-int-obj (value)
+  (let ((obj (init-var :obj)))
+    (setf (obj-tag obj) (tag->num :integer))
+    (setf (obj-value obj)
+          (if (cffi:pointerp value)
+              value
+              (constant :integer value)))
+    obj))
+
+(defun obj-value-as-int (obj)
+  (bit-cast (obj-value obj) :integer))

@@ -73,15 +73,7 @@
 
     (is-ptr (get-type :obj)
             clwgc.llvm::*obj*
-            "with :obj.")
-
-    (is-ptr (get-type '(:obj :integer))
-            clwgc.llvm::*obj.integer*
-            "with (:obj :integer).")
-
-    (is-ptr (get-type '(:obj :cons))
-            clwgc.llvm::*obj.cons*
-            "with (:obj :cons).")))
+            "with :obj.")))
 
 (subtest "get-type-of"
   (with-module
@@ -105,9 +97,7 @@
         '(:pointer :bool)
         "with (:pointer :bool).")
 
-    (skip 1 ":obj.")
-    (skip 1 "(:obj :integer).")
-    (skip 1 "(:obj :bool).")))
+    (skip 1 ":obj.")))
 
 (subtest "append-block"
   (with-module
@@ -180,7 +170,7 @@
           ":integer."))
 
     (let ((main (add-function-and-move-into "main" nil :integer)))
-      (ret (constant :bool 1))
+      (ret (constant :bool t))
       (is (run main)
           t
           ":bool."))))
@@ -277,6 +267,17 @@
             2
             "then with 0 in int64.")))))
 
+(subtest "build-if"
+  (with-module
+    (add-function-and-move-into "main" nil :integer)
+    (let ((result (build-if (constant :bool t)
+                            (constant :integer 1)
+                            (constant :integer 2))))
+      (ret result))
+    (is (run)
+        1
+        "can bulid-if.")))
+
 (subtest "call"
   (with-module
     (let ((main (add-function-and-move-into "main" (list :integer) :integer)))
@@ -339,9 +340,9 @@
   (with-module
     (add-function-and-move-into "main" nil :integer)
 
-      (is-ptr (llvm:type-of (load-var (make-cons (constant :integer 1) (constant :integer 2))))
-              (get-type :cons)
-              "can make-cons.")))
+    (is-ptr (llvm:type-of (load-var (make-cons (constant :integer 1) (constant :integer 2))))
+            (get-type :cons)
+            "can make-cons.")))
 
 (subtest "get-car"
   (with-module
