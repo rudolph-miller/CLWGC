@@ -21,7 +21,7 @@ install:
 
 before_script:
   - git clone https://github.com/fukamachi/cl-coveralls ~/lisp/cl-coveralls
-  - git clone -b issue/22 https://github.com/Rudolph-Miller/CL-LLVM ~/lisp/CL-LLVM
+  - git clone -b update-api https://github.com/Rudolph-Miller/CL-LLVM ~/lisp/CL-LLVM
 
 script:
   - cl -l prove -l cl-coveralls
